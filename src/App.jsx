@@ -17,18 +17,18 @@ function App() {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBirthday, setSelectedBirthday] = useState(null);
-  
+
   // Initialize authentication state from localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const token = localStorage.getItem('token');
     return !!token;
   });
-  
+
   const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('user');
     return userData ? JSON.parse(userData) : null;
   });
-  
+
   const [appSettings, setAppSettings] = useState({
     theme: 'system',
     notifications: true,
@@ -36,7 +36,7 @@ function App() {
     language: 'en',
     weekStartsOn: 0
   });
-  
+
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState('idle');
   const [checkingAuth, setCheckingAuth] = useState(!!localStorage.getItem('token'));
@@ -77,7 +77,7 @@ function App() {
     const checkAuthentication = async () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      
+
       if (token && userData) {
         try {
           setCheckingAuth(true);
@@ -105,7 +105,7 @@ function App() {
     };
 
     checkAuthentication();
-  }, []);
+  }, []); // Removed checkAuth from dependencies
 
   // Fetch data when authenticated
   useEffect(() => {
@@ -115,38 +115,47 @@ function App() {
     }
   }, [isAuthenticated]);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return false;
-      
+
       const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      
-      const response = await fetch(`${API_BASE}/api/auth/verify`, {
+
+      const response = await fetch(`${API_BASE}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      return response.ok;
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update user data if needed
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          setUser(data.user);
+        }
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Auth check failed:', error);
       return false;
     }
-  };
+  }, []);
 
   const fetchBirthdays = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
       const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      
+
       const response = await fetch(`${API_BASE}/api/birthdays`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setBirthdays(data);
@@ -170,13 +179,13 @@ function App() {
     try {
       const token = localStorage.getItem('token');
       const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      
+
       const response = await fetch(`${API_BASE}/api/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);
@@ -192,6 +201,7 @@ function App() {
     setIsAuthenticated(true);
     setUser(userData);
     setCurrentPage('home');
+    toast.success('Logged in successfully!');
   }, []);
 
   const handleRegister = useCallback((userData, token) => {
@@ -203,18 +213,51 @@ function App() {
     toast.success('Account created successfully!');
   }, []);
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('birthdays');
-    
-    setIsAuthenticated(false);
-    setUser(null);
-    setBirthdays([]);
-    setNotifications([]);
-    setCurrentPage('login');
-    
+  const handleLogout = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
+      // Call backend logout endpoint if token exists
+      if (token) {
+        try {
+          await fetch(`${API_BASE}/api/auth/logout`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (err) {
+          console.log('Logout API call failed (might be offline):', err);
+          // Continue with client-side logout even if server call fails
+        }
+      }
+    } catch (error) {
+      console.error('Error during logout API call:', error);
+    } finally {
+      // Always clear client-side storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('birthdays');
+
+      setIsAuthenticated(false);
+      setUser(null);
+      setBirthdays([]);
+      setNotifications([]);
+      setCurrentPage('login');
+
+      toast.info('Logged out successfully');
+    }
   }, []);
+
+  const handleSearch = useCallback((query) => {
+    // Simple search implementation
+    console.log('Searching for:', query);
+    if (query.trim() && currentPage !== 'view') {
+      setCurrentPage('view');
+    }
+  }, [currentPage]);
 
   const handleSettingsUpdate = useCallback((newSettings) => {
     setAppSettings(newSettings);
@@ -242,7 +285,7 @@ function App() {
     try {
       const token = localStorage.getItem('token');
       const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      
+
       const response = await fetch(`${API_BASE}/api/birthdays/${birthdayId}`, {
         method: 'DELETE',
         headers: {
@@ -287,8 +330,8 @@ function App() {
     switch (currentPage) {
       case 'add':
         return (
-          <AddBirthdayPage 
-            setCurrentPage={setCurrentPage} 
+          <AddBirthdayPage
+            setCurrentPage={setCurrentPage}
             onBirthdayAdded={fetchBirthdays}
             birthdayToEdit={selectedBirthday}
             onEditComplete={() => {
@@ -299,8 +342,8 @@ function App() {
         );
       case 'view':
         return (
-          <ViewBirthdaysPage 
-            birthdays={birthdays} 
+          <ViewBirthdaysPage
+            birthdays={birthdays}
             onBirthdayDeleted={fetchBirthdays}
             onBirthdayEdit={handleEdit}
             isLoading={isLoading}
@@ -308,15 +351,15 @@ function App() {
         );
       case 'notifications':
         return (
-          <NotificationsPage 
-            notifications={notifications} 
+          <NotificationsPage
+            notifications={notifications}
             setNotifications={setNotifications}
           />
         );
       case 'settings':
         return (
-          <SettingsPage 
-            settings={appSettings} 
+          <SettingsPage
+            settings={appSettings}
             onSettingsUpdate={handleSettingsUpdate}
             onRefresh={handleRefresh}
             syncStatus={syncStatus}
@@ -324,13 +367,12 @@ function App() {
           />
         );
       case 'home':
-   
       default:
         return (
-          <HomePage 
-            birthdays={birthdays} 
-            notifications={notifications} 
-            isLoading={isLoading} 
+          <HomePage
+            birthdays={birthdays}
+            notifications={notifications}
+            isLoading={isLoading}
             setCurrentPage={setCurrentPage}
             onRefresh={handleRefresh}
             onEdit={handleEdit}
@@ -341,31 +383,31 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${
-      appSettings.theme === 'dark' ? 'dark bg-gray-900 text-white' : 
-      appSettings.theme === 'light' ? 'bg-gradient-to-br from-blue-50 to-purple-50' :
-      'bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-gray-900 dark:text-white'
-    }`}>
-      <Header 
-        currentPage={currentPage} 
-        setCurrentPage={setCurrentPage} 
-        notificationsCount={notifications.filter(n => !n.isRead).length} 
+    <div className={`min-h-screen transition-colors duration-200 ${appSettings.theme === 'dark' ? 'dark bg-gray-900 text-white' :
+        appSettings.theme === 'light' ? 'bg-gradient-to-br from-blue-50 to-purple-50' :
+          'bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-gray-900 dark:text-white'
+      }`}>
+      <Header
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        notificationsCount={notifications.filter(n => !n.isRead).length}
         isAuthenticated={isAuthenticated}
         user={user}
-        onLogout={handleLogout}
+        onLogout={handleLogout}  
+        onSearch={handleSearch}   
       />
-      
+
       {/* Status indicators */}
       {!isOnline && (
         <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm">
           ⚠️ You are currently offline
         </div>
       )}
-      
+
       <main className="container mx-auto px-4 pt-0 pb-8">
         {renderPage()}
       </main>
-      
+
       <ToastContainer
         position="top-right"
         autoClose={5000}

@@ -98,13 +98,40 @@ function Header({
   const clearSearch = () => {
     setSearchQuery('');
     setShowSearch(false);
-    onSearch?.('');
+    if (onSearch) onSearch('');
   };
 
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to sign out?')) {
-      onLogout();
+  const handleLogout = async () => {
+    try {
+      console.log('Logout button clicked');
+      console.log('onLogout prop exists:', !!onLogout);
+      
+      // Call the parent logout handler first
+      if (onLogout) {
+        console.log('Calling onLogout from parent...');
+        await onLogout();
+      } else {
+        console.log('onLogout prop is not provided!');
+        // Fallback if onLogout is not provided
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("birthdays");
+      }
+      
+      // Close dropdown
       setShowDropdown(false);
+      
+      // Set current page to login - this is how your app navigates
+      console.log('Setting current page to login');
+      setCurrentPage('login');
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local storage and redirect even if error occurs
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("birthdays");
+      setCurrentPage('login');
     }
   };
 
