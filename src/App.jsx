@@ -120,9 +120,9 @@ function App() {
       const token = localStorage.getItem('token');
       if (!token) return false;
 
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
 
-      const response = await fetch(`${API_BASE}/api/auth/me`, {
+      const response = await fetch(`${API_BASE}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -148,9 +148,9 @@ function App() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
 
-      const response = await fetch(`${API_BASE}/api/birthdays`, {
+      const response = await fetch(`${API_BASE}/birthdays`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -178,9 +178,9 @@ function App() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
 
-      const response = await fetch(`${API_BASE}/api/notifications`, {
+      const response = await fetch(`${API_BASE}/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -216,12 +216,12 @@ function App() {
   const handleLogout = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
 
       // Call backend logout endpoint if token exists
       if (token) {
         try {
-          await fetch(`${API_BASE}/api/auth/logout`, {
+          await fetch(`${API_BASE}/auth/logout`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -284,9 +284,9 @@ function App() {
 
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
 
-      const response = await fetch(`${API_BASE}/api/birthdays/${birthdayId}`, {
+      const response = await fetch(`${API_BASE}/birthdays/${birthdayId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
