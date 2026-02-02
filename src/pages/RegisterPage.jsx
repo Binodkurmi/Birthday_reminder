@@ -10,7 +10,7 @@ import {
   FaShieldAlt
 } from 'react-icons/fa';
 
-function RegisterPage({ setCurrentPage }) {
+function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
   const [form, setForm] = useState({ 
     name: '', 
     email: '', 
@@ -45,10 +45,17 @@ function RegisterPage({ setCurrentPage }) {
 
     setLoading(true);
     try {
-      const API = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      const res = await fetch(`${API}/api/auth/register`, {
+      // CORRECT: Uses VITE_API_BASE from .env file
+      const API = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
+      
+      console.log('Registering with API:', API); // Debug log
+      
+      const res = await fetch(`${API}/auth/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.toLowerCase().trim(),
@@ -57,20 +64,31 @@ function RegisterPage({ setCurrentPage }) {
       });
 
       const data = await res.json();
+      
       if (res.ok) {
-        toast.success("Account created! Redirecting...");
-        setForm({ name: "", email: "", password: "", confirm: "", terms: false });
-        setTimeout(() => setCurrentPage('login'), 1500);
+        toast.success("Account created successfully!");
+        
+        // Call onRegister callback if provided (for App.js)
+        if (onRegister && data.user && data.token) {
+          onRegister(data.user, data.token);
+        } else {
+          // Fallback: redirect to login
+          setForm({ name: "", email: "", password: "", confirm: "", terms: false });
+          setTimeout(() => setCurrentPage('login'), 1500);
+        }
       } else {
-        toast.error(data.error || "Registration failed");
+        toast.error(data.error || `Registration failed (${res.status})`);
+        console.error('Registration error:', data);
       }
     } catch (err) {
-      toast.error("Network error");
+      console.error('Network error:', err);
+      toast.error("Network error. Please check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Rest of your component remains the same...
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-4">
       <div className="w-full max-w-sm">

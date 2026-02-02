@@ -44,11 +44,23 @@ function LoginPage({ setCurrentPage, onLogin }) {
 
     setLoading(true);
     try {
-      const API = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      const res = await fetch(`${API}/api/auth/login`, {
+      // CORRECT: API already includes /api from .env
+      const API = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
+      
+      console.log('Logging in with API:', API); // Debug log
+      
+      // FIXED: Remove /api from the endpoint
+      const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, remember })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ 
+          email: form.email.toLowerCase().trim(),
+          password: form.password,
+          rememberMe: remember 
+        })
       });
 
       const data = await res.json();
@@ -61,22 +73,29 @@ function LoginPage({ setCurrentPage, onLogin }) {
           setShowCode(true);
           toast.info(`Code: ${newCode} (Check email)`);
         }
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.error || `Login failed (${res.status})`);
       }
 
       setAttempts(0);
       setShowCode(false);
       sessionStorage.removeItem('securityCode');
-      onLogin(data.user, data.token);
-      toast.success(`Welcome back, ${data.user?.username || 'User'}!`);
+      
+      // Call onLogin with user data and token
+      if (onLogin && data.user && data.token) {
+        onLogin(data.user, data.token);
+        toast.success(`Welcome back, ${data.user?.name || 'User'}!`);
+      } else {
+        toast.error('Invalid response from server');
+      }
     } catch (err) {
-      toast.error(err.message);
+      console.error('Login error:', err);
+      toast.error(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const social = (p) => toast.info(`${p} login`);
+  const social = (p) => toast.info(`${p} login coming soon`);
   const forgot = () => {
     if (!form.email) return toast.error('Enter email first');
     toast.info(`Reset link sent to ${form.email}`);
@@ -125,7 +144,7 @@ function LoginPage({ setCurrentPage, onLogin }) {
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-2.5 text-gray-400"
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
                   >
                     {showPass ? <FaEyeSlash /> : <FaEye />}
                   </button>
@@ -153,11 +172,15 @@ function LoginPage({ setCurrentPage, onLogin }) {
                     type="checkbox"
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <span className="ml-2 text-gray-600">Remember me</span>
                 </label>
-                <button type="button" onClick={forgot} className="text-blue-600 hover:text-blue-700">
+                <button 
+                  type="button" 
+                  onClick={forgot} 
+                  className="text-blue-600 hover:text-blue-700 hover:underline"
+                >
                   Forgot?
                 </button>
               </div>
@@ -165,9 +188,19 @@ function LoginPage({ setCurrentPage, onLogin }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium text-sm disabled:opacity-70"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2.5 rounded-lg font-medium text-sm shadow-md transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </form>
 
@@ -185,7 +218,7 @@ function LoginPage({ setCurrentPage, onLogin }) {
                 <button
                   key={p}
                   onClick={() => social(p)}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+                  className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm transition-colors"
                 >
                   {p}
                 </button>
@@ -194,7 +227,10 @@ function LoginPage({ setCurrentPage, onLogin }) {
 
             <div className="mt-4 text-center text-sm text-gray-600">
               No account?{' '}
-              <button onClick={() => setCurrentPage('register')} className="text-blue-600 font-medium">
+              <button 
+                onClick={() => setCurrentPage('register')} 
+                className="text-blue-600 font-medium hover:text-blue-700 hover:underline"
+              >
                 Sign up
               </button>
             </div>
