@@ -1,6 +1,5 @@
-// pages/NotificationsPage.js
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaBirthdayCake, FaBell, FaCog, FaRedo, FaClock,FaInbox,FaLightbulb  } from "react-icons/fa";
+import { FaBirthdayCake, FaBell, FaCog, FaRedo, FaClock, FaInbox, FaLightbulb } from "react-icons/fa";
 import { toast } from 'react-toastify';
 
 function NotificationsPage({ notifications, setNotifications, onNotificationAction }) {
@@ -39,9 +38,9 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
-      const response = await fetch(`${API_BASE}/api/notifications`, {
+      const response = await fetch(`${API_BASE}/notifications`, { // ✅ REMOVED duplicate /api
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -68,9 +67,9 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
   const markAsRead = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
-      const response = await fetch(`${API_BASE}/api/notifications/${id}/read`, {
+      const response = await fetch(`${API_BASE}/notifications/${id}/read`, { // ✅ REMOVED duplicate /api
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -99,9 +98,9 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
   const markMultipleAsRead = async (ids) => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
-      const response = await fetch(`${API_BASE}/api/notifications/read-multiple`, {
+      const response = await fetch(`${API_BASE}/notifications/read-multiple`, { // ✅ REMOVED duplicate /api
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -128,9 +127,9 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
   const deleteNotification = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
-      const response = await fetch(`${API_BASE}/api/notifications/${id}`, {
+      const response = await fetch(`${API_BASE}/notifications/${id}`, { // ✅ REMOVED duplicate /api
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -161,10 +160,10 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
   const deleteMultipleNotifications = async (ids) => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
       const deletePromises = Array.from(ids).map(id =>
-        fetch(`${API_BASE}/api/notifications/${id}`, {
+        fetch(`${API_BASE}/notifications/${id}`, { // ✅ REMOVED duplicate /api
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -186,9 +185,9 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
-      const response = await fetch(`${API_BASE}/api/notifications/read-all`, {
+      const response = await fetch(`${API_BASE}/notifications/read-all`, { // ✅ REMOVED duplicate /api
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -222,14 +221,15 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
     setClearingAll(true);
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
-      const response = await fetch(`${API_BASE}/api/notifications`, {
+      const response = await fetch(`${API_BASE}/notifications`, { // ✅ REMOVED duplicate /api
+        method: 'DELETE', // Changed to DELETE for clearing all
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
-
 
       if (response.ok) {
         setNotifications([]);
@@ -272,18 +272,17 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
 
   const getNotificationIcon = (type) => {
     switch (type) {
-    case "birthday":
-      return <FaBirthdayCake className="text-pink-500" />;
-    case "reminder":
-      return <FaClock className="text-blue-500" />;
-    case "system":
-      return <FaCog className="text-gray-600" />;
-    case "update":
-      return <FaRedo className="text-green-500" />;
-    default:
-      return <FaBell className="text-yellow-500" />;
-  }
-
+      case "birthday":
+        return <FaBirthdayCake className="text-pink-500" />;
+      case "reminder":
+        return <FaClock className="text-blue-500" />;
+      case "system":
+        return <FaCog className="text-gray-600" />;
+      case "update":
+        return <FaRedo className="text-green-500" />;
+      default:
+        return <FaBell className="text-yellow-500" />;
+    }
   };
 
   const getTimeAgo = (date) => {
@@ -346,8 +345,8 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
             <button
               onClick={() => setFilter('all')}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'all'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               All ({notifications.length})
@@ -355,8 +354,8 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
             <button
               onClick={() => setFilter('unread')}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'unread'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               Unread ({unreadCount})
@@ -364,8 +363,8 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
             <button
               onClick={() => setFilter('birthday')}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'birthday'
-                  ? 'bg-yellow-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               Birthdays ({birthdayNotifications})
@@ -392,8 +391,8 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
             <button
               onClick={() => setIsSelecting(!isSelecting)}
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${isSelecting
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
             >
               {isSelecting ? 'Cancel' : 'Select'}
@@ -407,8 +406,8 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
         {filteredNotifications.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4 text-blue-500">
-  <FaInbox />
-</div>
+              <FaInbox />
+            </div>
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
               {filter === 'all' ? 'No notifications yet' : `No ${filter} notifications`}
             </h3>
@@ -441,10 +440,10 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
               <div
                 key={notif._id}
                 className={`p-4 transition-colors cursor-pointer ${selectedNotifications.has(notif._id)
-                    ? 'bg-blue-50'
-                    : !notif.isRead
-                      ? 'bg-purple-50'
-                      : 'hover:bg-gray-50'
+                  ? 'bg-blue-50'
+                  : !notif.isRead
+                    ? 'bg-purple-50'
+                    : 'hover:bg-gray-50'
                   }`}
                 onClick={() => handleNotificationClick(notif)}
               >
@@ -476,7 +475,7 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
 
                     {notif.birthdayId && (
                       <p className="text-sm text-gray-600 mt-1">
-                         <span className="text-xl sm:text-2xl md:text-3xl">
+                        <span className="text-xl sm:text-2xl md:text-3xl">
                           <FaBirthdayCake />
                         </span>{notif.birthdayId.name}
                       </p>
@@ -556,8 +555,8 @@ function NotificationsPage({ notifications, setNotifications, onNotificationActi
       <div className="mt-6 bg-blue-50 rounded-2xl p-4 border border-blue-200">
         <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
           <span className="mr-2 text-yellow-500">
-  <FaLightbulb />
-</span>
+            <FaLightbulb />
+          </span>
           Notification Tips
         </h4>
         <ul className="text-sm text-blue-700 space-y-1">

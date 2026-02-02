@@ -1,6 +1,5 @@
-// pages/ViewBirthdaysPage.js
 import React, { useState, useMemo, useEffect } from 'react';
-import { FaLightbulb,FaBirthdayCake } from "react-icons/fa";
+import { FaLightbulb, FaBirthdayCake } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import BirthdayCard from '../components/BirthdayCard';
 
@@ -18,36 +17,33 @@ function ViewBirthdaysPage({ birthdays, onBirthdayDeleted, isLoading, onBirthday
 
   // Set the base URL for images
   useEffect(() => {
-    const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+    const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
     setImageBaseUrl(API_BASE);
   }, []);
 
-
   // Process birthdays to ensure proper image URLs
+  const processedBirthdays = useMemo(() => {
+    return safeBirthdays.map(birthday => {
+      if (!birthday.image) {
+        return { ...birthday, imageUrl: null };
+      }
 
-const processedBirthdays = useMemo(() => {
-  return safeBirthdays.map(birthday => {
-    if (!birthday.image) {
-      return { ...birthday, imageUrl: null };
-    }
+      // Already a full URL
+      if (birthday.image.startsWith("http")) {
+        return { ...birthday, imageUrl: birthday.image };
+      }
 
-    // Already a full URL
-    if (birthday.image.startsWith("http")) {
-      return { ...birthday, imageUrl: birthday.image };
-    }
+      // API base (backend, not frontend)
+      const API_BASE = import.meta.env.VITE_API_BASE || "https://birthdarreminder.onrender.com/api"; // ✅ UPDATED
 
-    // API base (backend, not frontend)
-    const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+      // Always prepend base URL
+      const cleanPath = birthday.image.startsWith("/")
+        ? birthday.image
+        : `/${birthday.image}`;
 
-    // Always prepend base URL
-    const cleanPath = birthday.image.startsWith("/")
-      ? birthday.image
-      : `/${birthday.image}`;
-
-    return { ...birthday, imageUrl: `${API_BASE}${cleanPath}` };
-  });
-}, [safeBirthdays]);
-
+      return { ...birthday, imageUrl: `${API_BASE}${cleanPath}` };
+    });
+  }, [safeBirthdays]);
 
   // Extract unique relationships for filtering
   const relationships = useMemo(() => {
@@ -132,9 +128,9 @@ const processedBirthdays = useMemo(() => {
 
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
 
-      const response = await fetch(`${API_BASE}/api/birthdays/${id}`, {
+      const response = await fetch(`${API_BASE}/birthdays/${id}`, { // ✅ REMOVED duplicate /api
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -307,8 +303,8 @@ const processedBirthdays = useMemo(() => {
                     key={rel}
                     onClick={() => handleRelationshipFilter(rel)}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedRelationships.has(rel)
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                   >
                     {rel}
@@ -345,7 +341,8 @@ const processedBirthdays = useMemo(() => {
       {filteredBirthdays.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
           <span className="text-xl sm:text-2xl md:text-3xl">
-            <FaBirthdayCake /></span>
+            <FaBirthdayCake />
+          </span>
           <h3 className="text-lg font-semibold text-gray-700 mb-2">
             {searchTerm || selectedRelationships.size > 0 ? 'No birthdays found' : 'No birthdays yet'}
           </h3>
@@ -373,7 +370,7 @@ const processedBirthdays = useMemo(() => {
                 showActions={true}
                 onDelete={() => handleDelete(birthday._id)}
                 onEdit={() => onBirthdayEdit(birthday)}
-                imageBaseUrl="http://localhost:5000"
+                imageBaseUrl="https://birthdarreminder.onrender.com" // ✅ UPDATED: Removed /api for image URLs
               />
               {deletingId === birthday._id && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 rounded-2xl flex items-center justify-center">
@@ -389,8 +386,8 @@ const processedBirthdays = useMemo(() => {
       <div className="mt-8 bg-blue-50 rounded-2xl p-4 border border-blue-200">
         <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
           <span className="mr-2 text-yellow-500">
-  <FaLightbulb />
-</span>
+            <FaLightbulb />
+          </span>
           Pro Tips
         </h4>
         <ul className="text-sm text-blue-700 space-y-1">

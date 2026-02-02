@@ -1,6 +1,5 @@
-// pages/SettingsPage.js
 import React, { useState, useEffect } from 'react';
-import { FaCog, FaBell, FaDatabase, FaUser,FaLightbulb } from "react-icons/fa";
+import { FaCog, FaBell, FaDatabase, FaUser, FaLightbulb } from "react-icons/fa";
 import { toast } from 'react-toastify';
 
 function SettingsPage({ settings, onSettingsUpdate, onRefresh, syncStatus, isOnline }) {
@@ -36,9 +35,9 @@ function SettingsPage({ settings, onSettingsUpdate, onRefresh, syncStatus, isOnl
   const handleExportData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
       
-      const response = await fetch(`${API_BASE}/api/birthdays/export`, {
+      const response = await fetch(`${API_BASE}/birthdays/export`, { // ✅ REMOVED duplicate /api
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -66,9 +65,9 @@ function SettingsPage({ settings, onSettingsUpdate, onRefresh, syncStatus, isOnl
     try {
       const parsedData = JSON.parse(importData);
       const token = localStorage.getItem('token');
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api'; // ✅ UPDATED
       
-      const response = await fetch(`${API_BASE}/api/birthdays/import`, {
+      const response = await fetch(`${API_BASE}/birthdays/import`, { // ✅ REMOVED duplicate /api
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -110,12 +109,12 @@ function SettingsPage({ settings, onSettingsUpdate, onRefresh, syncStatus, isOnl
     }
   };
 
- const tabs = [
-  { id: "general", label: "General", icon: <FaCog className="text-gray-600" /> },
-  { id: "notifications", label: "Notifications", icon: <FaBell className="text-yellow-500" /> },
-  { id: "data", label: "Data", icon: <FaDatabase className="text-blue-500" /> },
-  { id: "account", label: "Account", icon: <FaUser className="text-green-500" /> }
-];
+  const tabs = [
+    { id: "general", label: "General", icon: <FaCog className="text-gray-600" /> },
+    { id: "notifications", label: "Notifications", icon: <FaBell className="text-yellow-500" /> },
+    { id: "data", label: "Data", icon: <FaDatabase className="text-blue-500" /> },
+    { id: "account", label: "Account", icon: <FaUser className="text-green-500" /> }
+  ];
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6">
@@ -417,8 +416,8 @@ function SettingsPage({ settings, onSettingsUpdate, onRefresh, syncStatus, isOnl
       <div className="mt-4 md:mt-6 bg-blue-50 rounded-xl md:rounded-2xl p-3 md:p-4 border border-blue-200">
         <h4 className="text-xs md:text-sm font-semibold text-blue-800 mb-1 md:mb-2 flex items-center">
           <span className="mr-2 text-yellow-500">
-  <FaLightbulb />
-</span>
+            <FaLightbulb />
+          </span>
           Settings Tips
         </h4>
         <ul className="text-xs md:text-sm text-blue-700 space-y-0.5 md:space-y-1">

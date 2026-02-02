@@ -185,7 +185,7 @@ const AddBirthdayPage = () => {
     setValidationErrors({});
   }, []);
 
-  // Form submission
+  // Form submission - FIXED: Removed duplicate /api
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
@@ -217,8 +217,12 @@ const AddBirthdayPage = () => {
         submitData.append('image', formData.image);
       }
 
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      const response = await fetch(`${API_BASE}/api/birthdays`, {
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
+      
+      console.log('🔍 DEBUG - API Base:', API_BASE);
+      console.log('🔍 DEBUG - Calling URL:', `${API_BASE}/birthdays`);
+      
+      const response = await fetch(`${API_BASE}/birthdays`, {  // ✅ FIXED: Removed duplicate /api
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

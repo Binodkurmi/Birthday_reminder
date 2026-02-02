@@ -7,7 +7,7 @@ const BirthdayCard = ({
   onDelete, 
   showActions = false, 
   onRemind, 
-  imageBaseUrl = 'http://localhost:5000' 
+  imageBaseUrl = 'https://birthdarreminder.onrender.com'
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
