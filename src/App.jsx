@@ -14,9 +14,12 @@ import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 
 // Import components
 import Header from './components/Header';
+import Footer from './components/Footer';
 
 import './App.css';
 
@@ -489,8 +492,12 @@ function AppContent() {
     }
   }, [handleLogout]);
 
+  // Check if current page is an auth page
+  const isAuthPage = ['/login', '/register'].includes(location.pathname);
+  const isPolicyPage = ['/privacy', '/terms'].includes(location.pathname);
+
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${appSettings.theme === 'dark' ? 'dark bg-gray-900 text-white' :
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${appSettings.theme === 'dark' ? 'dark bg-gray-900 text-white' :
         appSettings.theme === 'light' ? 'bg-gradient-to-br from-blue-50 to-purple-50' :
           'bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-gray-900 dark:text-white'
       }`}>
@@ -519,111 +526,120 @@ function AppContent() {
         </div>
       )}
 
-      <main className="container mx-auto px-4 pt-4 pb-8">
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={
-            isAuthenticated ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <LoginPage onLogin={handleLogin} />
-            )
-          } />
+      <main className="flex-grow">
+        <div className="container mx-auto px-4 pt-4 pb-8">
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={
+              isAuthenticated ? (
+                <Navigate to="/home" replace />
+              ) : (
+                <LoginPage onLogin={handleLogin} />
+              )
+            } />
 
-          <Route path="/register" element={
-            isAuthenticated ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <RegisterPage onRegister={handleRegister} />
-            )
-          } />
+            <Route path="/register" element={
+              isAuthenticated ? (
+                <Navigate to="/home" replace />
+              ) : (
+                <RegisterPage onRegister={handleRegister} />
+              )
+            } />
 
-          {/* Protected routes */}
-          <Route path="/" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <Navigate to="/home" replace />
-            </ProtectedRoute>
-          } />
+            {/* Privacy and Terms pages (public) */}
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
 
-          <Route path="/home" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <HomePage
-                birthdays={birthdays}
-                notifications={notifications}
-                isLoading={isLoading}
-                onRefresh={handleRefresh}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            </ProtectedRoute>
-          } />
+            {/* Protected routes */}
+            <Route path="/" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Navigate to="/home" replace />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/birthdays" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <ViewBirthdaysPage
-                birthdays={birthdays}
-                onBirthdayDeleted={fetchBirthdays}
-                onBirthdayEdit={handleEdit}
-                isLoading={isLoading}
-              />
-            </ProtectedRoute>
-          } />
+            <Route path="/home" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <HomePage
+                  birthdays={birthdays}
+                  notifications={notifications}
+                  isLoading={isLoading}
+                  onRefresh={handleRefresh}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/add-birthday" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <AddBirthdayPage
-                onBirthdayAdded={fetchBirthdays}
-                birthdayToEdit={selectedBirthday}
-                onEditComplete={() => {
-                  setSelectedBirthday(null);
-                  fetchBirthdays();
-                }}
-              />
-            </ProtectedRoute>
-          } />
+            <Route path="/birthdays" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <ViewBirthdaysPage
+                  birthdays={birthdays}
+                  onBirthdayDeleted={fetchBirthdays}
+                  onBirthdayEdit={handleEdit}
+                  isLoading={isLoading}
+                />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/notifications" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <NotificationsPage
-                notifications={notifications}
-                setNotifications={setNotifications}
-              />
-            </ProtectedRoute>
-          } />
+            <Route path="/add-birthday" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <AddBirthdayPage
+                  onBirthdayAdded={fetchBirthdays}
+                  birthdayToEdit={selectedBirthday}
+                  onEditComplete={() => {
+                    setSelectedBirthday(null);
+                    fetchBirthdays();
+                  }}
+                />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/settings" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <SettingsPage
-                settings={appSettings}
-                onSettingsUpdate={handleSettingsUpdate}
-                onRefresh={handleRefresh}
-                isOnline={isOnline}
-              />
-            </ProtectedRoute>
-          } />
+            <Route path="/notifications" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <NotificationsPage
+                  notifications={notifications}
+                  setNotifications={setNotifications}
+                />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/profile" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <ProfilePage
-                user={user}
-                setUser={setUser}
-              />
-            </ProtectedRoute>
-          } />
+            <Route path="/settings" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <SettingsPage
+                  settings={appSettings}
+                  onSettingsUpdate={handleSettingsUpdate}
+                  onRefresh={handleRefresh}
+                  isOnline={isOnline}
+                />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/analytics" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <AnalyticsPage
-                birthdays={birthdays}
-                isLoading={isLoading}
-              />
-            </ProtectedRoute>
-          } />
+            <Route path="/profile" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <ProfilePage
+                  user={user}
+                  setUser={setUser}
+                />
+              </ProtectedRoute>
+            } />
 
-          {/* 404 route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+            <Route path="/analytics" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <AnalyticsPage
+                  birthdays={birthdays}
+                  isLoading={isLoading}
+                />
+              </ProtectedRoute>
+            } />
+
+            {/* 404 route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </div>
       </main>
+
+      {/* Show footer for authenticated users and policy pages, but not on auth pages */}
+      {(isAuthenticated || isPolicyPage) && !isAuthPage && <Footer />}
 
       <ToastContainer
         position="top-right"
