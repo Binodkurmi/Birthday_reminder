@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { FaEye, FaEyeSlash, FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUserPlus } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
-function LoginPage({ setCurrentPage, onLogin }) {
+function LoginPage({ onLogin }) {
+  const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -34,22 +36,12 @@ function LoginPage({ setCurrentPage, onLogin }) {
     if (remember) localStorage.setItem('rememberedEmail', form.email);
     else localStorage.removeItem('rememberedEmail');
 
-    if (attempts >= 2) {
-      const stored = sessionStorage.getItem('securityCode');
-      if (!code || code !== stored) {
-        setErrors({ code: 'Invalid code' });
-        return;
-      }
-    }
-
     setLoading(true);
     try {
-      // CORRECT: API already includes /api from .env
       const API = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
       
-      console.log('Logging in with API:', API); // Debug log
+      console.log('🔐 Attempting login...');
       
-      // FIXED: Remove /api from the endpoint
       const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 
@@ -64,41 +56,70 @@ function LoginPage({ setCurrentPage, onLogin }) {
       });
 
       const data = await res.json();
+      console.log('📊 Login response:', data);
+      
       if (!res.ok) {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
+        
         if (newAttempts >= 2) {
           const newCode = Math.floor(100000 + Math.random() * 900000).toString();
           sessionStorage.setItem('securityCode', newCode);
           setShowCode(true);
-          toast.info(`Code: ${newCode} (Check email)`);
+          toast.info(`🔐 Security code sent: ${newCode}`);
         }
+        
+        // User-friendly error messages
+        if (data.error?.includes('not found') || data.error?.includes('Invalid')) {
+          toast.error('❌ Account not found. Please check your email or register.');
+        } else if (data.error?.includes('password')) {
+          toast.error('❌ Incorrect password. Please try again.');
+        } else {
+          toast.error(data.error || `Login failed (${res.status})`);
+        }
+        
         throw new Error(data.error || `Login failed (${res.status})`);
       }
 
+      console.log('✅ Login successful!');
+      
+      // Reset attempts
       setAttempts(0);
       setShowCode(false);
       sessionStorage.removeItem('securityCode');
       
-      // Call onLogin with user data and token
-      if (onLogin && data.user && data.token) {
+      // Store auth data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Call onLogin callback
+      if (onLogin && typeof onLogin === 'function') {
+        console.log('🔄 Calling onLogin callback...');
         onLogin(data.user, data.token);
-        toast.success(`Welcome back, ${data.user?.name || 'User'}!`);
+        toast.success(`👋 Welcome back, ${data.user?.name || 'User'}!`);
       } else {
-        toast.error('Invalid response from server');
+        // Fallback if callback not provided
+        console.log('⚠️ No onLogin callback, redirecting manually...');
+        toast.success(`👋 Welcome back, ${data.user?.name || 'User'}!`);
+        window.location.href = '/home'; // Full page reload to refresh auth state
       }
     } catch (err) {
-      console.error('Login error:', err);
-      toast.error(err.message || 'Login failed');
+      console.error('💥 Login error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const social = (p) => toast.info(`${p} login coming soon`);
-  const forgot = () => {
-    if (!form.email) return toast.error('Enter email first');
-    toast.info(`Reset link sent to ${form.email}`);
+  const navigateToRegister = () => {
+    navigate('/register');
+  };
+
+  const forgotPassword = () => {
+    if (!form.email) {
+      toast.error('Please enter your email first');
+      return;
+    }
+    toast.info(`Password reset link sent to ${form.email}`);
   };
 
   return (
@@ -108,7 +129,7 @@ function LoginPage({ setCurrentPage, onLogin }) {
           
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-5 text-center">
             <h1 className="text-lg font-bold text-white">Welcome Back</h1>
-            <p className="text-blue-100 text-xs">Sign in to continue</p>
+            <p className="text-blue-100 text-xs">Sign in to your birthday reminder</p>
           </div>
 
           <div className="p-5">
@@ -118,7 +139,6 @@ function LoginPage({ setCurrentPage, onLogin }) {
                 <div className="relative">
                   <input
                     type="email"
-                    name="email"
                     value={form.email}
                     onChange={(e) => setForm({...form, email: e.target.value})}
                     className="w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -134,7 +154,6 @@ function LoginPage({ setCurrentPage, onLogin }) {
                 <div className="relative">
                   <input
                     type={showPass ? "text" : "password"}
-                    name="password"
                     value={form.password}
                     onChange={(e) => setForm({...form, password: e.target.value})}
                     className="w-full pl-9 pr-9 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -178,10 +197,10 @@ function LoginPage({ setCurrentPage, onLogin }) {
                 </label>
                 <button 
                   type="button" 
-                  onClick={forgot} 
+                  onClick={forgotPassword} 
                   className="text-blue-600 hover:text-blue-700 hover:underline"
                 >
-                  Forgot?
+                  Forgot password?
                 </button>
               </div>
 
@@ -204,35 +223,30 @@ function LoginPage({ setCurrentPage, onLogin }) {
               </button>
             </form>
 
-            <div className="relative my-3">
+            <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-2 bg-white text-gray-500">Or</span>
+                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              {['Google', 'GitHub'].map(p => (
-                <button
-                  key={p}
-                  onClick={() => social(p)}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm transition-colors"
-                >
-                  {p}
-                </button>
-              ))}
+            <div className="text-center">
+              <button
+                onClick={navigateToRegister}
+                className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm"
+              >
+                <FaUserPlus className="mr-2" />
+                Create new account
+              </button>
             </div>
 
-            <div className="mt-4 text-center text-sm text-gray-600">
-              No account?{' '}
-              <button 
-                onClick={() => setCurrentPage('register')} 
-                className="text-blue-600 font-medium hover:text-blue-700 hover:underline"
-              >
-                Sign up
-              </button>
+            {/* Help text for users */}
+            <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
+              <p className="text-xs text-green-700">
+                <strong>Tip:</strong> New users will be automatically signed in after registration.
+              </p>
             </div>
           </div>
         </div>

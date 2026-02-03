@@ -1,7 +1,6 @@
-// RegisterPage.js - Updated version
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom'; // Add useNavigate
+import { useNavigate } from 'react-router-dom';
 import { 
   FaEye, 
   FaEyeSlash, 
@@ -13,7 +12,7 @@ import {
 } from 'react-icons/fa';
 
 function RegisterPage({ onRegister }) {
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
   const [form, setForm] = useState({ 
     name: '', 
     email: '', 
@@ -50,14 +49,10 @@ function RegisterPage({ onRegister }) {
     try {
       const API = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
       
-      console.log('Registering with API:', API);
-      console.log('Sending data:', {
-        name: form.name.trim(),
-        email: form.email.toLowerCase().trim(),
-        password: form.password,
-      });
+      console.log('📝 Registering user...');
       
-      const res = await fetch(`${API}/auth/register`, {
+      // Step 1: Register the user
+      const registerRes = await fetch(`${API}/auth/register`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -70,29 +65,67 @@ function RegisterPage({ onRegister }) {
         }),
       });
 
-      console.log('Response status:', res.status);
+      const registerData = await registerRes.json();
+      console.log('📊 Register response:', registerData);
       
-      const data = await res.json();
-      console.log('Response data:', data);
-      
-      if (res.ok) {
-        toast.success("Account created successfully!");
+      if (registerRes.ok) {
+        toast.success("✅ Account created successfully!");
         
-        // Call onRegister if provided
-        if (onRegister && data.user && data.token) {
-          onRegister(data.user, data.token);
-        } else {
-          // If no onRegister callback, navigate to login
-          toast.info("Please login with your new account");
+        // Step 2: Auto-login after registration
+        console.log('🔐 Attempting auto-login...');
+        try {
+          const loginRes = await fetch(`${API}/auth/login`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              email: form.email.toLowerCase().trim(),
+              password: form.password,
+              rememberMe: true
+            }),
+          });
+
+          const loginData = await loginRes.json();
+          console.log('🔑 Login response:', loginData);
+          
+          if (loginRes.ok && loginData.user && loginData.token) {
+            console.log('🎉 Auto-login successful!');
+            
+            // Clear form
+            setForm({ name: "", email: "", password: "", confirm: "", terms: false });
+            
+            // Call onRegister callback with login data
+            if (onRegister && typeof onRegister === 'function') {
+              console.log('🔄 Calling onRegister callback...');
+              onRegister(loginData.user, loginData.token);
+            } else {
+              console.log('⚠️ No onRegister callback, storing manually...');
+              // Fallback: Store auth data and redirect
+              localStorage.setItem('token', loginData.token);
+              localStorage.setItem('user', JSON.stringify(loginData.user));
+              toast.success(`👋 Welcome, ${loginData.user.name || 'User'}!`);
+              navigate('/home');
+            }
+          } else {
+            console.log('❌ Auto-login failed, redirecting to login page');
+            // Registration successful but auto-login failed
+            toast.info("📝 Account created! Please login with your credentials.");
+            navigate('/login');
+          }
+        } catch (loginError) {
+          console.error('💥 Auto-login error:', loginError);
+          toast.info("📝 Account created! Please login.");
           navigate('/login');
         }
       } else {
-        toast.error(data.error || `Registration failed (${res.status})`);
-        console.error('Registration error:', data);
+        console.error('❌ Registration failed:', registerData);
+        toast.error(registerData.error || `Registration failed (${registerRes.status})`);
       }
     } catch (err) {
-      console.error('Network error:', err);
-      toast.error("Network error. Please check your connection.");
+      console.error('💥 Network error:', err);
+      toast.error("🌐 Network error. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -112,13 +145,13 @@ function RegisterPage({ onRegister }) {
               <FaUser className="text-white text-xl" />
             </div>
             <h1 className="text-lg font-bold text-white">Create Account</h1>
-            <p className="text-blue-100 text-xs mt-1">Join our secure community</p>
+            <p className="text-blue-100 text-xs mt-1">Join our birthday reminder family</p>
           </div>
 
           <div className="p-5">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Name</label>
+                <label className="block text-sm text-gray-700 mb-1">Full Name</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -127,14 +160,14 @@ function RegisterPage({ onRegister }) {
                     className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                       errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Your name"
+                    placeholder="John Doe"
                   />
                   <FaUser className="absolute left-3 top-2.5 text-gray-400 text-sm" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Email</label>
+                <label className="block text-sm text-gray-700 mb-1">Email Address</label>
                 <div className="relative">
                   <input
                     type="email"
@@ -204,7 +237,7 @@ function RegisterPage({ onRegister }) {
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
                 />
                 <span className="ml-2 text-gray-600">
-                  I agree to the <a href="#" className="text-blue-600 hover:text-blue-700">Terms</a>
+                  I agree to the <a href="#" className="text-blue-600 hover:text-blue-700">Terms of Service</a> and <a href="#" className="text-blue-600 hover:text-blue-700">Privacy Policy</a>
                 </span>
               </label>
 
@@ -222,7 +255,7 @@ function RegisterPage({ onRegister }) {
                     Creating Account...
                   </span>
                 ) : (
-                  'Create Account'
+                  'Create Account & Sign In'
                 )}
               </button>
             </form>
@@ -244,6 +277,13 @@ function RegisterPage({ onRegister }) {
                 Sign in to existing account
               </button>
             </div>
+
+            {/* Help text for new users */}
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-xs text-blue-700">
+                <strong>New User?</strong> After registration, you'll be automatically signed in and redirected to the homepage.
+              </p>
+            </div>
           </div>
 
           <div className="px-5 py-3 bg-gray-50 border-t">
@@ -254,7 +294,7 @@ function RegisterPage({ onRegister }) {
               </div>
               <div className="flex items-center">
                 <FaCheckCircle className="mr-1 text-blue-500" />
-                <span>Encrypted</span>
+                <span>Auto sign-in</span>
               </div>
             </div>
           </div>

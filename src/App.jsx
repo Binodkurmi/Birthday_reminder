@@ -39,7 +39,8 @@ function AppContent() {
   // Initialize authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const token = localStorage.getItem('token');
-    return !!token;
+    const userData = localStorage.getItem('user');
+    return !!(token && userData);
   });
 
   const [user, setUser] = useState(() => {
@@ -133,6 +134,58 @@ function AppContent() {
     checkAuthentication();
   }, []);
 
+  // Sync auth state with localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      
+      if (token && userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          if (!isAuthenticated || user?.id !== parsedUser?.id) {
+            console.log('🔄 Syncing auth state from localStorage');
+            setIsAuthenticated(true);
+            setUser(parsedUser);
+          }
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+        }
+      } else if (isAuthenticated) {
+        console.log('🔄 Clearing auth state (no token in localStorage)');
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+
+    // Listen for storage events
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [isAuthenticated, user]);
+
+  // Check auth when route changes
+  useEffect(() => {
+    handleStorageCheck();
+  }, [location.pathname]);
+
+  const handleStorageCheck = () => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      if (!isAuthenticated) {
+        setIsAuthenticated(true);
+        setUser(JSON.parse(userData));
+      }
+    } else if (isAuthenticated) {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
   // Fetch data when authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -168,6 +221,41 @@ function AppContent() {
       return false;
     }
   }, []);
+
+  // Function to fetch user data
+  const fetchUserData = async (token) => {
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
+      
+      // Fetch both birthdays and notifications in parallel
+      const [birthdaysRes, notificationsRes] = await Promise.all([
+        fetch(`${API_BASE}/birthdays`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${API_BASE}/notifications`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+      
+      if (birthdaysRes.ok) {
+        const birthdaysData = await birthdaysRes.json();
+        setBirthdays(birthdaysData);
+        localStorage.setItem('birthdays', JSON.stringify(birthdaysData));
+        setIsLoading(false);
+      }
+      
+      if (notificationsRes.ok) {
+        const notificationsData = await notificationsRes.json();
+        setNotifications(notificationsData);
+      }
+      
+      console.log('✅ User data fetched successfully');
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.warning('Using cached data - check your connection');
+      setIsLoading(false);
+    }
+  };
 
   const fetchBirthdays = async () => {
     try {
@@ -221,21 +309,79 @@ function AppContent() {
   };
 
   const handleLogin = useCallback((userData, token) => {
+    console.log('🔑 handleLogin called with:', { 
+      userName: userData?.name, 
+      hasToken: !!token 
+    });
+    
+    if (!userData || !token) {
+      console.error('❌ Login failed: Missing user data or token');
+      toast.error('Login incomplete. Please try again.');
+      return;
+    }
+    
+    // Clear old data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('birthdays');
+    sessionStorage.clear();
+    
+    // Store new auth data
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
-    setIsAuthenticated(true);
+    
+    // Force state update
     setUser(userData);
+    setIsAuthenticated(true);
+    
+    // Fetch user data
+    fetchUserData(token);
+    
+    // Navigate to home
     navigate('/home');
-    toast.success('Logged in successfully!');
+    
+    toast.success(`👋 Welcome back, ${userData.name || 'User'}!`);
+    
+    console.log('✅ User logged in successfully');
   }, [navigate]);
 
   const handleRegister = useCallback((userData, token) => {
+    console.log('🎉 handleRegister called with:', { 
+      userName: userData?.name, 
+      hasToken: !!token 
+    });
+    
+    if (!userData || !token) {
+      console.error('❌ Registration failed: Missing user data or token');
+      toast.error('Registration incomplete. Please try logging in.');
+      navigate('/login');
+      return;
+    }
+    
+    // Clear any existing data to start fresh
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('birthdays');
+    sessionStorage.clear();
+    
+    // Store new auth data
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
-    setIsAuthenticated(true);
+    
+    // Force React state update immediately
     setUser(userData);
+    setIsAuthenticated(true);
+    
+    // Fetch user data with the new token
+    fetchUserData(token);
+    
+    // Navigate to home
     navigate('/home');
-    toast.success('Account created successfully!');
+    
+    // Show welcome message
+    toast.success(`🎂 Welcome to Birthday Reminder, ${userData.name || 'User'}!`);
+    
+    console.log('✅ User registered and logged in successfully');
   }, [navigate]);
 
   const handleLogout = useCallback(async () => {
@@ -267,7 +413,6 @@ function AppContent() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('birthdays');
-      // Keep appSettings in localStorage for next session
 
       sessionStorage.clear();
 
@@ -355,7 +500,8 @@ function AppContent() {
           <div className="font-bold mb-1">Debug Panel:</div>
           <div>Authenticated: {isAuthenticated ? '✅' : '❌'}</div>
           <div>Current Page: {location.pathname}</div>
-          <div>User: {user?.username || 'None'}</div>
+          <div>User: {user?.name || user?.username || 'None'}</div>
+          <div>Token: {localStorage.getItem('token') ? '✅' : '❌'}</div>
         </div>
       )}
 
