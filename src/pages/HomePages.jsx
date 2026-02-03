@@ -15,7 +15,9 @@ import {
   FaCog,
   FaLightbulb,
   FaSync,
-  FaExclamationCircle
+  FaExclamationCircle,
+  FaChevronDown,
+  FaChevronUp
 } from 'react-icons/fa';
 
 const FILTER_OPTIONS = {
@@ -36,9 +38,12 @@ function HomePage({
   const navigate = useNavigate();
   
   const [upcomingBirthdays, setUpcomingBirthdays] = useState([]);
+  const [filteredBirthdays, setFilteredBirthdays] = useState([]);
   const [activeFilter, setActiveFilter] = useState(FILTER_OPTIONS.UPCOMING);
   const [searchTerm, setSearchTerm] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAllBirthdays, setShowAllBirthdays] = useState(false);
+  const [displayBirthdays, setDisplayBirthdays] = useState([]);
 
   // Ensure birthdays is an array
   const safeBirthdays = Array.isArray(birthdays) ? birthdays : [];
@@ -237,16 +242,31 @@ function HomePage({
           if (!birthday) return false;
           const name = birthday.name ? birthday.name.toLowerCase() : '';
           const notes = birthday.notes ? birthday.notes.toLowerCase() : '';
-          return name.includes(term) || notes.includes(term);
+          const relationship = birthday.relationship ? birthday.relationship.toLowerCase() : '';
+          return name.includes(term) || notes.includes(term) || relationship.includes(term);
         });
       }
 
-      setUpcomingBirthdays(filtered.slice(0, 8)); // Limit to 8 for better performance
+      // Set filtered birthdays for stats
+      setFilteredBirthdays(filtered);
+      
+      // Set display birthdays based on showAll state
+      if (showAllBirthdays) {
+        setDisplayBirthdays(filtered);
+      } else {
+        setDisplayBirthdays(filtered.slice(0, 8));
+      }
     } catch (error) {
       console.error('Error filtering birthdays:', error);
-      setUpcomingBirthdays([]);
+      setFilteredBirthdays([]);
+      setDisplayBirthdays([]);
     }
-  }, [safeBirthdays, activeFilter, searchTerm]);
+  }, [safeBirthdays, activeFilter, searchTerm, showAllBirthdays]);
+
+  // Toggle show all birthdays
+  const toggleShowAllBirthdays = () => {
+    setShowAllBirthdays(!showAllBirthdays);
+  };
 
   const getFilterLabel = () => {
     switch (activeFilter) {
@@ -264,7 +284,10 @@ function HomePage({
 
   const FilterButton = ({ filter, label, icon: Icon }) => (
     <button
-      onClick={() => setActiveFilter(filter)}
+      onClick={() => {
+        setActiveFilter(filter);
+        setShowAllBirthdays(false); // Reset to limited view when filter changes
+      }}
       className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
         activeFilter === filter
           ? 'bg-purple-600 text-white shadow-md'
@@ -427,19 +450,45 @@ function HomePage({
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
           <p className="mt-4 text-gray-600">Loading birthdays...</p>
         </div>
-      ) : upcomingBirthdays.length > 0 ? (
+      ) : displayBirthdays.length > 0 ? (
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">
-              {getFilterLabel()}
-            </h2>
-            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              {upcomingBirthdays.length} results
-            </span>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {getFilterLabel()}
+              </h2>
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                {filteredBirthdays.length} {searchTerm ? 'found' : 'total'}
+              </span>
+            </div>
+            
+            {!showAllBirthdays && filteredBirthdays.length > 8 && (
+              <button
+                onClick={toggleShowAllBirthdays}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 font-medium"
+              >
+                <FaEye className="w-4 h-4" />
+                View All ({filteredBirthdays.length})
+                <FaChevronDown className="w-3 h-3" />
+              </button>
+            )}
+            
+            {showAllBirthdays && filteredBirthdays.length > 8 && (
+              <button
+                onClick={toggleShowAllBirthdays}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white rounded-lg hover:from-gray-600 hover:to-gray-800 transition-all duration-200 font-medium"
+              >
+                <FaEye className="w-4 h-4" />
+                Show Less
+                <FaChevronUp className="w-3 h-3" />
+              </button>
+            )}
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {upcomingBirthdays.map(birthday => {
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${
+            showAllBirthdays ? 'pb-6' : ''
+          }`}>
+            {displayBirthdays.map(birthday => {
               if (!birthday) return null;
               return (
                 <BirthdayCard 
@@ -453,6 +502,24 @@ function HomePage({
               );
             })}
           </div>
+          
+          {/* View All reminder when not showing all */}
+          {!showAllBirthdays && filteredBirthdays.length > 8 && (
+            <div className="mt-8 text-center">
+              <div className="inline-flex items-center gap-3 text-gray-600 bg-gray-50 px-6 py-4 rounded-2xl border border-gray-200">
+                <FaExclamationCircle className="text-blue-500 w-5 h-5" />
+                <span>
+                  Showing 8 of {filteredBirthdays.length} birthdays. 
+                  <button 
+                    onClick={toggleShowAllBirthdays}
+                    className="ml-2 text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                  >
+                    Click here to view all
+                  </button>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-purple-50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -478,7 +545,7 @@ function HomePage({
       )}
 
       {/* Tips Section */}
-      {!isLoading && safeBirthdays.length > 2 && (
+      {!isLoading && safeBirthdays.length > 2 && !showAllBirthdays && (
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <div className="bg-blue-50 rounded-2xl p-5 border border-blue-200">
             <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
@@ -486,13 +553,13 @@ function HomePage({
               Pro Tip
             </h4>
             <p className="text-blue-700 text-sm mb-3">
-              Use the search feature to quickly find birthdays by name or notes.
+              Use the "View All" button to see all birthdays at once. Filter by categories or search for specific people.
             </p>
             <button 
               onClick={() => navigateTo('/birthdays')}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
-              Explore all birthdays →
+              Explore all birthdays in full page →
             </button>
           </div>
 
@@ -533,6 +600,26 @@ function HomePage({
             >
               View Notifications
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Current View Info */}
+      {showAllBirthdays && displayBirthdays.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-10">
+          <div className="bg-white rounded-xl shadow-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-gray-700">
+                Showing all {displayBirthdays.length} birthdays
+              </span>
+              <button
+                onClick={toggleShowAllBirthdays}
+                className="ml-2 text-xs text-gray-500 hover:text-gray-700"
+              >
+                [Show Less]
+              </button>
+            </div>
           </div>
         </div>
       )}
