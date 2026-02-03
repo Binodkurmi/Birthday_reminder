@@ -856,7 +856,7 @@ function Header({
       )}
 
       {/* Mobile Bottom Spacer */}
-      {isAuthenticated && !showSearch && <div className="md:hidden h-16" aria-hidden="true"></div>}
+      {isAuthenticated && !showSearch && <div className="md:hidden h-16" aria-hidden="false"></div>}
 
       <style jsx>{`
         @keyframes fadeIn {

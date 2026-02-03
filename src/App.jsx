@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Header from './components/Header';
-import HomePage from './pages/HomePage';
+import { AnimatePresence, motion } from 'framer-motion'; // Optional: install with `npm install framer-motion`
+
+// Import page components
+import HomePage from './pages/HomePages';
 import AddBirthdayPage from './pages/AddBirthdayPage';
 import ViewBirthdaysPage from './pages/ViewBirthdaysPage';
 import NotificationsPage from './pages/NotificationsPage';
@@ -11,14 +14,37 @@ import RegisterPage from './pages/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import NotFoundPage from './pages/NotFoundPage'; // Create this
+import ProtectedRoute from './components/ProtectedRoute'; // Create this
+import Layout from './components/Layout'; // Create this
+
+// Import components
+import Header from './components/Header';
+
 import './App.css';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+// Page transition wrapper
+const PageWrapper = ({ children }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="w-full"
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+function AppContent() {
   const [birthdays, setBirthdays] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBirthday, setSelectedBirthday] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Initialize authentication state from localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -80,30 +106,6 @@ function App() {
     localStorage.setItem('appSettings', JSON.stringify(appSettings));
   }, [appSettings]);
 
-  // Handle browser back/forward navigation
-  useEffect(() => {
-    const handlePopState = (event) => {
-      if (event.state && event.state.page) {
-        setCurrentPage(event.state.page);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    
-    // Listen for route changes from Header
-    const handleRouteChange = (event) => {
-      const { page } = event.detail;
-      setCurrentPage(page);
-    };
-
-    window.addEventListener('routeChange', handleRouteChange);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('routeChange', handleRouteChange);
-    };
-  }, []);
-
   // Check authentication on app load
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -117,7 +119,6 @@ function App() {
           if (isValid) {
             setUser(JSON.parse(userData));
             setIsAuthenticated(true);
-            setCurrentPage('home');
           } else {
             handleLogout();
           }
@@ -231,36 +232,29 @@ function App() {
     localStorage.setItem('user', JSON.stringify(userData));
     setIsAuthenticated(true);
     setUser(userData);
-    setCurrentPage('home');
+    navigate('/home');
     toast.success('Logged in successfully!');
-  }, []);
+  }, [navigate]);
 
   const handleRegister = useCallback((userData, token) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setIsAuthenticated(true);
     setUser(userData);
-    setCurrentPage('home');
+    navigate('/home');
     toast.success('Account created successfully!');
-  }, []);
+  }, [navigate]);
 
-  // FIXED: Working logout function
   const handleLogout = useCallback(async () => {
     try {
-      console.log('🔴 Logout function called in App.js');
+      console.log('🔴 Logout function called');
       
       const token = localStorage.getItem('token');
       const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
 
-      console.log('🔑 Token exists:', !!token);
-      console.log('🌐 API Base:', API_BASE);
-
       // Try to call backend logout endpoint if token exists
       if (token) {
         try {
-          console.log('📡 Attempting to call logout API...');
-          
-          // Note: Changed from GET to POST as most APIs use POST for logout
           const response = await fetch(`${API_BASE}/auth/logout`, {
             method: 'POST',
             headers: {
@@ -270,26 +264,14 @@ function App() {
           });
 
           console.log('📊 Logout API response status:', response.status);
-          
-          if (response.ok) {
-            console.log('✅ Backend logout successful');
-          } else {
-            console.log('⚠️ Backend logout failed with status:', response.status);
-            // Don't throw error - continue with client-side logout
-          }
         } catch (apiError) {
           console.log('🌐 Logout API call failed (might be offline):', apiError);
-          // Continue with client-side logout even if server call fails
         }
-      } else {
-        console.log('🔓 No token found, skipping API call');
       }
     } catch (error) {
       console.error('❌ Error in logout function:', error);
     } finally {
-      // ALWAYS clear client-side storage regardless of API success
-      console.log('🗑️ Clearing client-side storage...');
-      
+      // Clear client-side storage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('birthdays');
@@ -303,27 +285,23 @@ function App() {
       setUser(null);
       setBirthdays([]);
       setNotifications([]);
-      setCurrentPage('login');
 
+      // Navigate to login page
+      navigate('/login');
+      
       // Show logout success message
       toast.info('Logged out successfully');
       
       console.log('✅ Logout completed - state reset');
-      
-      // Force a page reload to ensure clean state
-      setTimeout(() => {
-        console.log('🔄 Reloading page...');
-        window.location.reload();
-      }, 300);
     }
-  }, []);
+  }, [navigate]);
 
   const handleSearch = useCallback((query) => {
     console.log('Searching for:', query);
-    if (query.trim() && currentPage !== 'view') {
-      setCurrentPage('view');
+    if (query.trim() && isAuthenticated) {
+      navigate('/birthdays');
     }
-  }, [currentPage]);
+  }, [isAuthenticated, navigate]);
 
   const handleSettingsUpdate = useCallback((newSettings) => {
     setAppSettings(newSettings);
@@ -340,8 +318,8 @@ function App() {
 
   const handleEdit = useCallback((birthday) => {
     setSelectedBirthday(birthday);
-    setCurrentPage('add');
-  }, []);
+    navigate('/add-birthday', { state: { editing: true, birthday } });
+  }, [navigate]);
 
   const handleDelete = useCallback(async (birthdayId) => {
     if (!window.confirm('Are you sure you want to delete this birthday?')) {
@@ -374,108 +352,14 @@ function App() {
     }
   }, [handleLogout]);
 
-  // Handle page change with authentication check
-  const handlePageChange = useCallback((page) => {
-    const protectedPages = ['home', 'add', 'view', 'analytics', 'profile', 'settings', 'notifications'];
-    
-    if (protectedPages.includes(page) && !isAuthenticated) {
-      toast.error('Please login to access this page');
-      setCurrentPage('login');
-      return;
-    }
-    
-    setCurrentPage(page);
-  }, [isAuthenticated]);
-
-  const renderPage = () => {
-    if (checkingAuth) {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-          <span className="ml-4 text-lg">Checking authentication...</span>
-        </div>
-      );
-    }
-
-    if (!isAuthenticated) {
-      switch (currentPage) {
-        case 'register':
-          return <RegisterPage setCurrentPage={setCurrentPage} onRegister={handleRegister} />;
-        case 'login':
-        default:
-          return <LoginPage setCurrentPage={setCurrentPage} onLogin={handleLogin} />;
-      }
-    }
-
-    switch (currentPage) {
-      case 'add':
-        return (
-          <AddBirthdayPage
-            setCurrentPage={setCurrentPage}
-            onBirthdayAdded={fetchBirthdays}
-            birthdayToEdit={selectedBirthday}
-            onEditComplete={() => {
-              setSelectedBirthday(null);
-              fetchBirthdays();
-            }}
-          />
-        );
-      case 'view':
-        return (
-          <ViewBirthdaysPage
-            birthdays={birthdays}
-            onBirthdayDeleted={fetchBirthdays}
-            onBirthdayEdit={handleEdit}
-            isLoading={isLoading}
-          />
-        );
-      case 'notifications':
-        return (
-          <NotificationsPage
-            notifications={notifications}
-            setNotifications={setNotifications}
-          />
-        );
-      case 'settings':
-        return (
-          <SettingsPage
-            settings={appSettings}
-            onSettingsUpdate={handleSettingsUpdate}
-            onRefresh={handleRefresh}
-            syncStatus={syncStatus}
-            isOnline={isOnline}
-          />
-        );
-      case 'profile':
-        return (
-          <ProfilePage
-            user={user}
-            setUser={setUser}
-            setCurrentPage={setCurrentPage}
-          />
-        );
-      case 'analytics':
-        return (
-          <AnalyticsPage
-            birthdays={birthdays}
-            isLoading={isLoading}
-          />
-        );
-      case 'home':
-      default:
-        return (
-          <HomePage
-            birthdays={birthdays}
-            notifications={notifications}
-            isLoading={isLoading}
-            setCurrentPage={setCurrentPage}
-            onRefresh={handleRefresh}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        );
-    }
-  };
+  if (checkingAuth) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <span className="ml-4 text-lg">Checking authentication...</span>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${appSettings.theme === 'dark' ? 'dark bg-gray-900 text-white' :
@@ -488,24 +372,13 @@ function App() {
           <div className="font-bold mb-1">Debug Panel:</div>
           <div>Authenticated: {isAuthenticated ? '✅' : '❌'}</div>
           <div>Token: {localStorage.getItem('token') ? '✅' : '❌'}</div>
-          <div>Current Page: {currentPage}</div>
+          <div>Current Page: {location.pathname}</div>
           <div>User: {user?.username || 'None'}</div>
-          <button 
-            onClick={() => {
-              console.log('Manual logout test');
-              handleLogout();
-            }}
-            className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-xs w-full"
-          >
-            Test Logout
-          </button>
         </div>
       )}
 
       <Header
-        currentPage={currentPage}
-        setCurrentPage={handlePageChange}
-        notificationsCount={notifications.filter(n => !n.isRead).length}
+        currentPage={location.pathname}
         isAuthenticated={isAuthenticated}
         user={user}
         onLogout={handleLogout}
@@ -520,7 +393,146 @@ function App() {
       )}
 
       <main className="container mx-auto px-4 pt-0 pb-8">
-        {renderPage()}
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            {/* Public routes */}
+            <Route path="/login" element={
+              <PageWrapper>
+                {isAuthenticated ? (
+                  <Navigate to="/home" replace />
+                ) : (
+                  <LoginPage onLogin={handleLogin} />
+                )}
+              </PageWrapper>
+            } />
+            
+            <Route path="/register" element={
+              <PageWrapper>
+                {isAuthenticated ? (
+                  <Navigate to="/home" replace />
+                ) : (
+                  <RegisterPage onRegister={handleRegister} />
+                )}
+              </PageWrapper>
+            } />
+
+            {/* Protected routes */}
+            <Route path="/" element={
+              isAuthenticated ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />
+            } />
+            
+            <Route path="/home" element={
+              isAuthenticated ? (
+                <PageWrapper>
+                  <HomePage
+                    birthdays={birthdays}
+                    notifications={notifications}
+                    isLoading={isLoading}
+                    onRefresh={handleRefresh}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+            
+            <Route path="/birthdays" element={
+              isAuthenticated ? (
+                <PageWrapper>
+                  <ViewBirthdaysPage
+                    birthdays={birthdays}
+                    onBirthdayDeleted={fetchBirthdays}
+                    onBirthdayEdit={handleEdit}
+                    isLoading={isLoading}
+                  />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+            
+            <Route path="/add-birthday" element={
+              isAuthenticated ? (
+                <PageWrapper>
+                  <AddBirthdayPage
+                    onBirthdayAdded={fetchBirthdays}
+                    birthdayToEdit={selectedBirthday}
+                    onEditComplete={() => {
+                      setSelectedBirthday(null);
+                      fetchBirthdays();
+                    }}
+                  />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+            
+            <Route path="/notifications" element={
+              isAuthenticated ? (
+                <PageWrapper>
+                  <NotificationsPage
+                    notifications={notifications}
+                    setNotifications={setNotifications}
+                  />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+            
+            <Route path="/settings" element={
+              isAuthenticated ? (
+                <PageWrapper>
+                  <SettingsPage
+                    settings={appSettings}
+                    onSettingsUpdate={handleSettingsUpdate}
+                    onRefresh={handleRefresh}
+                    syncStatus={syncStatus}
+                    isOnline={isOnline}
+                  />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+            
+            <Route path="/profile" element={
+              isAuthenticated ? (
+                <PageWrapper>
+                  <ProfilePage
+                    user={user}
+                    setUser={setUser}
+                  />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+            
+            <Route path="/analytics" element={
+              isAuthenticated ? (
+                <PageWrapper>
+                  <AnalyticsPage
+                    birthdays={birthdays}
+                    isLoading={isLoading}
+                  />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } />
+
+            {/* 404 route */}
+            <Route path="*" element={
+              <PageWrapper>
+                <NotFoundPage />
+              </PageWrapper>
+            } />
+          </Routes>
+        </AnimatePresence>
       </main>
 
       <ToastContainer
@@ -536,6 +548,15 @@ function App() {
         theme={appSettings.theme === 'dark' ? 'dark' : 'light'}
       />
     </div>
+  );
+}
+
+// Main App component
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 

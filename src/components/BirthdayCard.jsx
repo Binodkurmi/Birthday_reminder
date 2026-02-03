@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FaBirthdayCake, FaComment, FaPhone, FaGift } from "react-icons/fa";
 
-const BirthdayCard = ({ 
-  birthday, 
-  onEdit, 
-  onDelete, 
-  showActions = false, 
-  onRemind, 
+const BirthdayCard = ({
+  birthday,
+  onEdit,
+  onDelete,
+  showActions = false,
+  onRemind,
   imageBaseUrl = 'https://birthdarreminder.onrender.com'
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -15,31 +15,31 @@ const BirthdayCard = ({
   const [timeUntil, setTimeUntil] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
-  
+
   // FIX: Properly set image URL on component mount
   useEffect(() => {
     console.log(`🎯 BirthdayCard loaded for: ${birthday.name}`);
     console.log(`📸 Image field in DB: "${birthday.image}"`);
     console.log(`🔗 Image URL from backend: "${birthday.imageUrl}"`);
-    
+
     if (birthday.image) {
       let url = null;
-      
+
       // Priority 1: Use imageUrl from backend if available
       if (birthday.imageUrl) {
-        url = birthday.imageUrl.startsWith('http') 
-          ? birthday.imageUrl 
+        url = birthday.imageUrl.startsWith('http')
+          ? birthday.imageUrl
           : `${imageBaseUrl}${birthday.imageUrl}`;
         console.log(`✅ Using imageUrl from backend: ${url}`);
-      } 
+      }
       // Priority 2: Construct from image field (filename only)
       else {
         // Extract just the filename (remove any path)
         const filename = birthday.image.split('/').pop();
-        url = `${imageBaseUrl}/uploads/${filename}`;
+        url = `${imageBaseUrl}/api/uploads/${filename}`;  
         console.log(`✅ Constructed URL from filename: ${url}`);
       }
-      
+
       setImageUrl(url);
       setIsImageError(false); // Reset error state
     } else {
@@ -51,30 +51,30 @@ const BirthdayCard = ({
   // FIX: Calculate image URL using useMemo for better performance
   const calculatedImageUrl = useMemo(() => {
     if (!birthday.image) return null;
-    
+
     // Extract just the filename (remove any path)
     const filename = birthday.image.split('/').pop();
-    return `${imageBaseUrl}/uploads/${filename}`;
+    return `${imageBaseUrl}/api/uploads/${filename}`;
   }, [birthday.image, imageBaseUrl]);
-  
+
   // Calculate days until birthday
   const birthDate = useMemo(() => new Date(birthday.date), [birthday.date]);
   const today = useMemo(() => new Date(), []);
-  
+
   const diffDays = useMemo(() => {
     const currentYear = today.getFullYear();
     const nextBirthday = new Date(birthDate);
     nextBirthday.setFullYear(currentYear);
-    
+
     // If birthday already passed this year, use next year
     if (nextBirthday < today) {
       nextBirthday.setFullYear(currentYear + 1);
     }
-    
+
     const diffTime = nextBirthday - today;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }, [birthDate, today]);
-  
+
   // Calculate age for the next birthday
   const birthYear = new Date(birthday.date).getFullYear();
   const currentYear = today.getFullYear();
@@ -85,7 +85,7 @@ const BirthdayCard = ({
   const getZodiacSign = (date) => {
     const day = date.getDate();
     const month = date.getMonth() + 1;
-    
+
     const signs = [
       { sign: "♑ Capricorn (मकर)", start: [1, 1], end: [1, 19] },
       { sign: "♒ Aquarius (कुम्भ)", start: [1, 20], end: [2, 18] },
@@ -102,8 +102,8 @@ const BirthdayCard = ({
       { sign: "♑ Capricorn (मकर)", start: [12, 22], end: [12, 31] }
     ];
 
-    return signs.find(sign => 
-      (month === sign.start[0] && day >= sign.start[1]) || 
+    return signs.find(sign =>
+      (month === sign.start[0] && day >= sign.start[1]) ||
       (month === sign.end[0] && day <= sign.end[1])
     )?.sign || "Unknown";
   };
@@ -136,7 +136,7 @@ const BirthdayCard = ({
       timestamp: new Date().toISOString()
     });
     setIsImageError(true);
-    
+
     // Test if the URL is accessible
     if (e.target.src) {
       console.log(`🔍 Testing URL accessibility: ${e.target.src}`);
@@ -220,8 +220,8 @@ const BirthdayCard = ({
   };
 
   const formatBirthdayDate = () => {
-    return birthDate.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return birthDate.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric'
     });
   };
@@ -235,10 +235,9 @@ const BirthdayCard = ({
   };
 
   return (
-    <div 
-      className={`relative rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-white border border-gray-100 ${
-        isHovered ? 'ring-2 ring-purple-200' : ''
-      }`}
+    <div
+      className={`relative rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-white border border-gray-100 ${isHovered ? 'ring-2 ring-purple-200' : ''
+        }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -267,7 +266,7 @@ const BirthdayCard = ({
                 </span>
                 {/* Debug button - shows only in development */}
                 {process.env.NODE_ENV === 'development' && isImageError && (
-                  <button 
+                  <button
                     onClick={() => {
                       console.log('🔄 Retrying image...');
                       console.log('Birthday object:', birthday);
@@ -339,8 +338,8 @@ const BirthdayCard = ({
             <span>{diffDays}d left</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full transition-all duration-500" 
+            <div
+              className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full transition-all duration-500"
               style={{ width: `${Math.max(5, 100 - (diffDays / 60) * 100)}%` }}
             />
           </div>
@@ -360,7 +359,7 @@ const BirthdayCard = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
-            
+
             <div className="relative">
               <button
                 onClick={() => setShowQuickActions(!showQuickActions)}
