@@ -241,7 +241,7 @@ function AppContent() {
   const handleLogout = useCallback(async () => {
     try {
       console.log('🔴 App: Logout function called');
-      
+
       // Get token before clearing
       const token = localStorage.getItem('token');
       const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
@@ -268,7 +268,7 @@ function AppContent() {
       localStorage.removeItem('user');
       localStorage.removeItem('birthdays');
       // Keep appSettings in localStorage for next session
-      
+
       sessionStorage.clear();
 
       // Reset React state
@@ -279,10 +279,10 @@ function AppContent() {
 
       // Navigate to login page
       navigate('/login', { replace: true });
-      
+
       // Show logout success message
       toast.info('Logged out successfully');
-      
+
       console.log('✅ App: Logout completed');
     }
   }, [navigate]);
@@ -345,11 +345,10 @@ function AppContent() {
   }, [handleLogout]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${
-      appSettings.theme === 'dark' ? 'dark bg-gray-900 text-white' :
-      appSettings.theme === 'light' ? 'bg-gradient-to-br from-blue-50 to-purple-50' :
-      'bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-gray-900 dark:text-white'
-    }`}>
+    <div className={`min-h-screen transition-colors duration-200 ${appSettings.theme === 'dark' ? 'dark bg-gray-900 text-white' :
+        appSettings.theme === 'light' ? 'bg-gradient-to-br from-blue-50 to-purple-50' :
+          'bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-gray-900 dark:text-white'
+      }`}>
       {/* Debug panel */}
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 right-4 bg-black/90 text-white p-3 rounded-lg text-xs z-50 max-w-xs">
@@ -384,7 +383,7 @@ function AppContent() {
               <LoginPage onLogin={handleLogin} />
             )
           } />
-          
+
           <Route path="/register" element={
             isAuthenticated ? (
               <Navigate to="/home" replace />
@@ -399,7 +398,7 @@ function AppContent() {
               <Navigate to="/home" replace />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/home" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <HomePage
@@ -412,7 +411,7 @@ function AppContent() {
               />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/birthdays" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <ViewBirthdaysPage
@@ -423,7 +422,7 @@ function AppContent() {
               />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/add-birthday" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <AddBirthdayPage
@@ -436,7 +435,7 @@ function AppContent() {
               />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/notifications" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <NotificationsPage
@@ -445,7 +444,7 @@ function AppContent() {
               />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/settings" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <SettingsPage
@@ -456,7 +455,7 @@ function AppContent() {
               />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/profile" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <ProfilePage
@@ -465,7 +464,7 @@ function AppContent() {
               />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/analytics" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <AnalyticsPage

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+// RegisterPage.js - Updated version
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom'; // Add useNavigate
 import { 
   FaEye, 
   FaEyeSlash, 
@@ -10,7 +12,8 @@ import {
   FaShieldAlt
 } from 'react-icons/fa';
 
-function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
+function RegisterPage({ onRegister }) {
+  const navigate = useNavigate(); // Initialize navigate
   const [form, setForm] = useState({ 
     name: '', 
     email: '', 
@@ -45,10 +48,14 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
 
     setLoading(true);
     try {
-      // CORRECT: Uses VITE_API_BASE from .env file
       const API = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
       
-      console.log('Registering with API:', API); // Debug log
+      console.log('Registering with API:', API);
+      console.log('Sending data:', {
+        name: form.name.trim(),
+        email: form.email.toLowerCase().trim(),
+        password: form.password,
+      });
       
       const res = await fetch(`${API}/auth/register`, {
         method: "POST",
@@ -63,18 +70,21 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
         }),
       });
 
+      console.log('Response status:', res.status);
+      
       const data = await res.json();
+      console.log('Response data:', data);
       
       if (res.ok) {
         toast.success("Account created successfully!");
         
-        // Call onRegister callback if provided (for App.js)
+        // Call onRegister if provided
         if (onRegister && data.user && data.token) {
           onRegister(data.user, data.token);
         } else {
-          // Fallback: redirect to login
-          setForm({ name: "", email: "", password: "", confirm: "", terms: false });
-          setTimeout(() => setCurrentPage('login'), 1500);
+          // If no onRegister callback, navigate to login
+          toast.info("Please login with your new account");
+          navigate('/login');
         }
       } else {
         toast.error(data.error || `Registration failed (${res.status})`);
@@ -88,14 +98,15 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
     }
   };
 
-  // Rest of your component remains the same...
+  const navigateToLogin = () => {
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-4">
       <div className="w-full max-w-sm">
-        {/* Card - Matching Login Theme */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           
-          {/* Header - Same as Login */}
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-5 text-center">
             <div className="w-12 h-12 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
               <FaUser className="text-white text-xl" />
@@ -104,10 +115,8 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
             <p className="text-blue-100 text-xs mt-1">Join our secure community</p>
           </div>
 
-          {/* Form */}
           <div className="p-5">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name */}
               <div>
                 <label className="block text-sm text-gray-700 mb-1">Name</label>
                 <div className="relative">
@@ -124,7 +133,6 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-sm text-gray-700 mb-1">Email</label>
                 <div className="relative">
@@ -141,7 +149,6 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-sm text-gray-700 mb-1">Password</label>
                 <div className="relative">
@@ -166,7 +173,6 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
                 <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <label className="block text-sm text-gray-700 mb-1">Confirm Password</label>
                 <div className="relative">
@@ -190,7 +196,6 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
                 </div>
               </div>
 
-              {/* Terms */}
               <label className="flex items-center text-sm">
                 <input
                   type="checkbox"
@@ -203,7 +208,6 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
                 </span>
               </label>
 
-              {/* Submit Button - Same style as Login */}
               <button
                 type="submit"
                 disabled={loading}
@@ -223,7 +227,6 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
               </button>
             </form>
 
-            {/* Divider - Same as Login */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -233,10 +236,9 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
               </div>
             </div>
 
-            {/* Login Link */}
             <div className="text-center">
               <button
-                onClick={() => setCurrentPage('login')}
+                onClick={navigateToLogin}
                 className="text-blue-600 hover:text-blue-700 font-medium text-sm"
               >
                 Sign in to existing account
@@ -244,7 +246,6 @@ function RegisterPage({ setCurrentPage, onRegister }) { // Added onRegister prop
             </div>
           </div>
 
-          {/* Footer - Matching Login */}
           <div className="px-5 py-3 bg-gray-50 border-t">
             <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
               <div className="flex items-center">
