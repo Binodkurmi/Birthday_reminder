@@ -37,7 +37,6 @@ function HomePage({
 }) {
   const navigate = useNavigate();
   
-  const [upcomingBirthdays, setUpcomingBirthdays] = useState([]);
   const [filteredBirthdays, setFilteredBirthdays] = useState([]);
   const [activeFilter, setActiveFilter] = useState(FILTER_OPTIONS.UPCOMING);
   const [searchTerm, setSearchTerm] = useState('');
@@ -310,15 +309,15 @@ function HomePage({
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-7xl mx-auto px-4 py-4">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-xl p-6 mb-6 text-white">
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-xl p-6 text-white">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">
+            <h1 className="text-2xl md:text-3xl font-bold">
               {getGreeting()}! 
             </h1>
-            <p className="text-purple-100">
+            <p className="text-purple-100 mt-1">
               {stats.today > 0 
                 ? `${stats.today} birthday${stats.today !== 1 ? 's' : ''} today!`
                 : 'No birthdays today. Check upcoming celebrations below.'
@@ -336,7 +335,7 @@ function HomePage({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="text-2xl font-bold text-purple-600">{stats.total}</div>
           <div className="text-sm text-gray-600">Total Birthdays</div>
@@ -356,29 +355,29 @@ function HomePage({
       </div>
 
       {/* Action Cards */}
-      <div className="grid md:grid-cols-2 gap-6 mb-8">
+      <div className="grid md:grid-cols-2 gap-4 mt-6">
         {/* Quick Insights Card */}
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
-          <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center">
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-4 border border-purple-100">
+          <h3 className="text-lg font-semibold text-purple-800 flex items-center">
             <FaLightbulb className="mr-2" />
             Quick Insights
           </h3>
-          <div className="space-y-3 text-sm">
+          <div className="space-y-2 text-sm mt-2">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Notifications</span>
-              <span className="font-semibold bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs">
+              <span className="font-semibold bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
                 {stats.notificationCount}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Today's Celebrations</span>
-              <span className="font-semibold bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
+              <span className="font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
                 {stats.today}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Upcoming Week</span>
-              <span className="font-semibold bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs">
+              <span className="font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                 {stats.upcoming}
               </span>
             </div>
@@ -386,9 +385,9 @@ function HomePage({
         </div>
         
         {/* Quick Actions Card */}
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-6 border border-yellow-100">
-          <h3 className="text-lg font-semibold text-yellow-800 mb-3">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-4 border border-yellow-100">
+          <h3 className="text-lg font-semibold text-yellow-800">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-2 mt-2">
             <ActionButton 
               onClick={() => navigateTo('/add-birthday')}
               className="bg-purple-500 text-white hover:bg-purple-600"
@@ -422,8 +421,8 @@ function HomePage({
       </div>
 
       {/* Filter and Search Section */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+      <div className="bg-white rounded-2xl shadow-sm p-4 mt-6">
+        <div className="flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
           <div className="flex flex-wrap gap-2">
             <FilterButton filter={FILTER_OPTIONS.UPCOMING} label="Upcoming" icon={FaCalendarAlt} />
             <FilterButton filter={FILTER_OPTIONS.TODAY} label="Today" icon={FaBirthdayCake} />
@@ -431,7 +430,7 @@ function HomePage({
             <FilterButton filter={FILTER_OPTIONS.ALL} label="All" icon={FaUsers} />
           </div>
           
-          <div className="relative w-full md:w-64">
+          <div className="relative w-full md:w-64 mt-3 md:mt-0">
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
@@ -446,13 +445,13 @@ function HomePage({
 
       {/* Birthdays Grid */}
       {isLoading ? (
-        <div className="text-center py-12">
+        <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-          <p className="mt-4 text-gray-600">Loading birthdays...</p>
+          <p className="mt-3 text-gray-600">Loading birthdays...</p>
         </div>
       ) : displayBirthdays.length > 0 ? (
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
+        <div className="mt-6">
+          <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold text-gray-800">
                 {getFilterLabel()}
@@ -465,7 +464,7 @@ function HomePage({
             {!showAllBirthdays && filteredBirthdays.length > 8 && (
               <button
                 onClick={toggleShowAllBirthdays}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 font-medium text-sm"
               >
                 <FaEye className="w-4 h-4" />
                 View All ({filteredBirthdays.length})
@@ -476,7 +475,7 @@ function HomePage({
             {showAllBirthdays && filteredBirthdays.length > 8 && (
               <button
                 onClick={toggleShowAllBirthdays}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white rounded-lg hover:from-gray-600 hover:to-gray-800 transition-all duration-200 font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white rounded-lg hover:from-gray-600 hover:to-gray-800 transition-all duration-200 font-medium text-sm"
               >
                 <FaEye className="w-4 h-4" />
                 Show Less
@@ -485,9 +484,7 @@ function HomePage({
             )}
           </div>
           
-          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${
-            showAllBirthdays ? 'pb-6' : ''
-          }`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
             {displayBirthdays.map(birthday => {
               if (!birthday) return null;
               return (
@@ -505,10 +502,10 @@ function HomePage({
           
           {/* View All reminder when not showing all */}
           {!showAllBirthdays && filteredBirthdays.length > 8 && (
-            <div className="mt-8 text-center">
-              <div className="inline-flex items-center gap-3 text-gray-600 bg-gray-50 px-6 py-4 rounded-2xl border border-gray-200">
+            <div className="text-center mt-4">
+              <div className="inline-flex items-center gap-3 text-gray-600 bg-gray-50 px-6 py-3 rounded-2xl border border-gray-200">
                 <FaExclamationCircle className="text-blue-500 w-5 h-5" />
-                <span>
+                <span className="text-sm">
                   Showing 8 of {filteredBirthdays.length} birthdays. 
                   <button 
                     onClick={toggleShowAllBirthdays}
@@ -522,12 +519,12 @@ function HomePage({
           )}
         </div>
       ) : (
-        <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-purple-50 rounded-2xl border-2 border-dashed border-gray-200">
-          <FaBirthdayCake className="text-6xl text-purple-400 mx-auto mb-6" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+        <div className="text-center py-8 bg-gradient-to-br from-gray-50 to-purple-50 rounded-2xl border-2 border-dashed border-gray-200 mt-6">
+          <FaBirthdayCake className="text-5xl text-purple-400 mx-auto" />
+          <h3 className="text-lg font-semibold text-gray-700 mt-3">
             {searchTerm ? 'No birthdays found' : 'No birthdays yet'}
           </h3>
-          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+          <p className="text-gray-500 mt-2 max-w-md mx-auto text-sm">
             {searchTerm 
               ? `No birthdays match "${searchTerm}". Try a different search term.`
               : 'Start by adding birthdays to get reminders!'
@@ -536,7 +533,7 @@ function HomePage({
           {!searchTerm && (
             <button 
               onClick={() => navigateTo('/add-birthday')}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl mt-4"
             >
               Add Your First Birthday
             </button>
@@ -546,29 +543,29 @@ function HomePage({
 
       {/* Tips Section */}
       {!isLoading && safeBirthdays.length > 2 && !showAllBirthdays && (
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-blue-50 rounded-2xl p-5 border border-blue-200">
-            <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
-              <FaChartLine className="mr-2 text-xl" />
+        <div className="grid md:grid-cols-2 gap-4 mt-6">
+          <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200">
+            <h4 className="text-md font-semibold text-blue-800 flex items-center">
+              <FaChartLine className="mr-2" />
               Pro Tip
             </h4>
-            <p className="text-blue-700 text-sm mb-3">
+            <p className="text-blue-700 text-sm mt-2">
               Use the "View All" button to see all birthdays at once. Filter by categories or search for specific people.
             </p>
             <button 
               onClick={() => navigateTo('/birthdays')}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium mt-2"
             >
               Explore all birthdays in full page →
             </button>
           </div>
 
-          <div className="bg-green-50 rounded-2xl p-5 border border-green-200">
-            <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-              <FaBell className="mr-2 text-xl" />
+          <div className="bg-green-50 rounded-2xl p-4 border border-green-200">
+            <h4 className="text-md font-semibold text-green-800 flex items-center">
+              <FaBell className="mr-2" />
               Birthday Insights
             </h4>
-            <p className="text-green-700 text-sm">
+            <p className="text-green-700 text-sm mt-2">
               You have birthdays spread across {new Set(safeBirthdays.map(b => {
                 try {
                   return new Date(b.date).getMonth();
@@ -583,20 +580,20 @@ function HomePage({
 
       {/* Notification Preview */}
       {stats.notificationCount > 0 && (
-        <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-200 mb-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="bg-yellow-50 rounded-2xl p-4 border border-yellow-200 mt-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
             <div className="flex-1">
-              <h4 className="text-lg font-semibold text-yellow-800 mb-1 flex items-center">
-                <FaBell className="mr-2 w-5 h-5" />
+              <h4 className="text-md font-semibold text-yellow-800 flex items-center">
+                <FaBell className="mr-2 w-4 h-4" />
                 You have {stats.notificationCount} notification{stats.notificationCount !== 1 ? 's' : ''}
               </h4>
-              <p className="text-yellow-700 text-sm">
+              <p className="text-yellow-700 text-sm mt-1">
                 Check your notifications for upcoming birthdays and reminders.
               </p>
             </div>
             <button 
               onClick={() => navigateTo('/notifications')}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors whitespace-nowrap text-sm"
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors whitespace-nowrap text-sm mt-2 md:mt-0"
             >
               View Notifications
             </button>
@@ -607,9 +604,9 @@ function HomePage({
       {/* Current View Info */}
       {showAllBirthdays && displayBirthdays.length > 0 && (
         <div className="fixed bottom-4 right-4 z-10">
-          <div className="bg-white rounded-xl shadow-xl p-4 border border-gray-200">
+          <div className="bg-white rounded-xl shadow-xl p-3 border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium text-gray-700">
                 Showing all {displayBirthdays.length} birthdays
               </span>
