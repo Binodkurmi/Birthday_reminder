@@ -14,7 +14,8 @@ import {
   FaChevronDown,
   FaTimes,
   FaUserCircle,
-  FaSpinner
+  FaSpinner,
+  FaHome
 } from "react-icons/fa";
 import { MdDashboard, MdCelebration, MdNotifications } from "react-icons/md";
 import { HiChartBar } from "react-icons/hi";
@@ -227,14 +228,14 @@ function Header({
     {
       path: '/home',
       key: 'dashboard',
-      label: 'Dashboard',
-      icon: <MdDashboard />,
+      label: 'Home',
+      icon: <FaHome />,
       accent: 'from-blue-500 to-cyan-500',
     },
     {
       path: '/add-birthday',
       key: 'add',
-      label: 'Add Birthday',
+      label: 'Add',
       icon: <FaUserPlus />,
       accent: 'from-emerald-500 to-teal-500',
     },
@@ -251,6 +252,13 @@ function Header({
       label: 'Analytics',
       icon: <HiChartBar />,
       accent: 'from-amber-500 to-orange-500',
+    },
+    {
+      path: '/profile',
+      key: 'profile',
+      label: 'Profile',
+      icon: <FaUserCircle />,
+      accent: 'from-indigo-500 to-purple-500',
     }
   ];
 
@@ -272,10 +280,11 @@ function Header({
       {/* Desktop Header */}
       <header
         ref={headerRef}
-        className={`hidden md:block sticky top-0 z-50 transition-all duration-200 ${scrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-lg'
-          : 'bg-white/90 backdrop-blur-sm'
-          }`}
+        className={`hidden md:block sticky top-0 z-50 transition-all duration-200 ${
+          scrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-lg'
+            : 'bg-white/90 backdrop-blur-sm'
+        }`}
       >
         <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
@@ -450,33 +459,6 @@ function Header({
                         </div>
 
                         <div className="p-1">
-                          {/* Profile Link */}
-                          <button
-                            onClick={() => {
-                              setActiveNav('profile');
-                              setShowDropdown(false);
-                              navigate('/profile');
-                            }}
-                            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors duration-300 text-sm focus:outline-none focus:bg-gray-50 ${
-                              activeNav === 'profile'
-                                ? 'bg-purple-50 text-purple-700'
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${
-                              activeNav === 'profile'
-                                ? 'bg-purple-100'
-                                : 'bg-gray-100'
-                            }`}>
-                              <FaUserCircle className={`text-sm ${
-                                activeNav === 'profile'
-                                  ? 'text-purple-600'
-                                  : 'text-gray-600'
-                              }`} />
-                            </div>
-                            <span className="font-medium">Profile</span>
-                          </button>
-
                           {/* Settings Link */}
                           <button
                             onClick={() => {
@@ -554,8 +536,8 @@ function Header({
         </div>
       </header>
 
-      {/* Mobile Header */}
-      <div className="md:hidden sticky top-0 z-50">
+      {/* Mobile Header - Top Section Only */}
+      <div className="md:hidden sticky top-0 z-40">
         <div className={`${scrolled ? 'bg-white shadow-lg' : 'bg-white'} transition-all duration-200`}>
           {/* Top Bar */}
           <div className="px-3 py-2">
@@ -663,58 +645,66 @@ function Header({
               </div>
             )}
           </div>
-
-          {/* Mobile Navigation */}
-          {isAuthenticated && !showSearch && (
-            <nav>
-              <div className="flex justify-around items-center px-1 py-1">
-                {navigationItems.map((item) => {
-                  const isActive = activeNav === item.key;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setActiveNav(item.key)}
-                      className={`group relative flex flex-col items-center justify-center p-1 transition-all duration-300 flex-1 mx-0.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 ${
-                        isActive
-                          ? `text-white shadow-lg scale-105`
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                      style={{
-                        transform: isActive ? 'scale(1.05)' : 'scale(1)',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                    >
-                      {/* Background for active state */}
-                      {isActive && (
-                        <div
-                          className={`absolute inset-0 rounded-lg bg-gradient-to-r ${item.accent}`}
-                          style={{
-                            animation: 'fadeIn 0.3s ease-out'
-                          }}
-                        />
-                      )}
-                      
-                      <span className={`text-base relative z-10 transition-all duration-300 ${
-                        isActive ? 'scale-110' : ''
-                      }`}>
-                        {item.icon}
-                      </span>
-                      <span className={`text-xs font-medium mt-0.5 relative z-10 ${
-                        isActive ? 'font-semibold' : ''
-                      }`}>
-                        {item.label}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </nav>
-          )}
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile Bottom Navbar - Only for authenticated users */}
+      {isAuthenticated && !showSearch && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <nav className="flex justify-around items-center px-1 py-2">
+            {navigationItems.map((item) => {
+              const isActive = activeNav === item.key;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => {
+                    setActiveNav(item.key);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`group relative flex flex-col items-center justify-center p-2 transition-all duration-300 flex-1 mx-0.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500 ${
+                    isActive
+                      ? `text-white shadow-lg`
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  style={{
+                    transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                >
+                  {/* Background for active state */}
+                  {isActive && (
+                    <div
+                      className={`absolute inset-0 rounded-xl bg-gradient-to-r ${item.accent}`}
+                      style={{
+                        animation: 'fadeIn 0.3s ease-out'
+                      }}
+                    />
+                  )}
+                  
+                  <span className={`text-lg relative z-10 transition-all duration-300 ${
+                    isActive ? 'scale-110' : ''
+                  }`}>
+                    {item.icon}
+                  </span>
+                  <span className={`text-xs font-medium mt-1 relative z-10 ${
+                    isActive ? 'font-semibold' : ''
+                  }`}>
+                    {item.label}
+                  </span>
+                  
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className="absolute -top-1 w-2 h-1 rounded-full bg-gradient-to-r from-white/80 to-transparent"></div>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+
+      {/* Mobile Dropdown Menu */}
       {showDropdown && isAuthenticated && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-50 flex justify-end"
@@ -738,32 +728,6 @@ function Header({
             </div>
 
             <div className="p-2">
-              <button
-                onClick={() => {
-                  setActiveNav('profile');
-                  setShowDropdown(false);
-                  navigate('/profile');
-                }}
-                className={`w-full text-left px-3 py-3 rounded-lg flex items-center space-x-2 text-sm focus:outline-none transition-colors duration-300 ${
-                  activeNav === 'profile'
-                    ? 'bg-purple-50 text-purple-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${
-                  activeNav === 'profile'
-                    ? 'bg-purple-100'
-                    : 'bg-gray-100'
-                }`}>
-                  <FaUserCircle className={`text-sm ${
-                    activeNav === 'profile'
-                      ? 'text-purple-600'
-                      : 'text-gray-600'
-                  }`} />
-                </div>
-                <span className="font-medium">Profile</span>
-              </button>
-
               <button
                 onClick={() => {
                   setActiveNav('settings');
@@ -815,8 +779,10 @@ function Header({
         </div>
       )}
 
-      {/* Mobile Bottom Spacer */}
-      {isAuthenticated && !showSearch && <div className="md:hidden "></div>}
+      {/* Bottom Spacer for Mobile Navbar */}
+      {isAuthenticated && !showSearch && (
+        <div className="md:hidden"></div>
+      )}
     </>
   );
 }
