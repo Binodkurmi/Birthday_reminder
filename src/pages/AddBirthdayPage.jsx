@@ -1,9 +1,20 @@
+// src/pages/AddBirthdayPage.jsx
 import React, { useState, useRef, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaArrowLeft, FaSave, FaUser, FaCalendarDay, FaImage, FaBell, FaNotesMedical } from 'react-icons/fa';
+import { 
+  FaArrowLeft, 
+  FaSave, 
+  FaUser, 
+  FaCalendarDay, 
+  FaImage, 
+  FaBell, 
+  FaNotesMedical,
+  FaSync 
+} from 'react-icons/fa';
 
-// Constants for better maintainability
+// Constants
 const RELATIONSHIPS = [
   'Family', 'Friend', 'Colleague', 'Relative', 'Partner', 
   'Acquaintance', 'Other'
@@ -47,14 +58,41 @@ const INITIAL_FORM_DATA = {
 };
 
 const AddBirthdayPage = () => {
+  const navigate = useNavigate();
+  
   // State management
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [validationErrors, setValidationErrors] = useState({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Refs
   const fileInputRef = useRef(null);
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      toast.info('Refreshing...');
+      setFormData(INITIAL_FORM_DATA);
+      setCurrentStep(1);
+      setValidationErrors({});
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setTimeout(() => {
+        toast.success('Form refreshed!');
+      }, 500);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Get gradient color based on urgency
+  const getHeaderGradient = () => {
+    return 'bg-gradient-to-r from-blue-500 to-purple-500';
+  };
 
   // Calculate age from birth date
   const calculateAge = useCallback(() => {
@@ -95,7 +133,6 @@ const AddBirthdayPage = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear validation error for this field
     if (validationErrors[name]) {
       setValidationErrors(prev => ({
         ...prev,
@@ -110,14 +147,12 @@ const AddBirthdayPage = () => {
     
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file (JPEG, PNG, etc.)');
+      toast.error('Please select a valid image file');
       return;
     }
     
-    // Validate file size (max 5MB)
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
       toast.error('Image size should be less than 5MB');
       return;
@@ -185,11 +220,10 @@ const AddBirthdayPage = () => {
     setValidationErrors({});
   }, []);
 
-  // Form submission - FIXED: Removed duplicate /api
+  // Form submission
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
-    // Final validation
     if (!validateStep1()) {
       return;
     }
@@ -201,10 +235,10 @@ const AddBirthdayPage = () => {
       if (!token) {
         toast.error('Authentication required. Please login again.');
         localStorage.removeItem('token');
+        navigate('/login');
         return;
       }
 
-      // Prepare form data
       const submitData = new FormData();
       submitData.append('name', formData.name.trim());
       submitData.append('date', formData.date);
@@ -218,11 +252,7 @@ const AddBirthdayPage = () => {
       }
 
       const API_BASE = import.meta.env.VITE_API_BASE || 'https://birthdarreminder.onrender.com/api';
-      
-      console.log('🔍 DEBUG - API Base:', API_BASE);
-      console.log('🔍 DEBUG - Calling URL:', `${API_BASE}/birthdays`);
-      
-      const response = await fetch(`${API_BASE}/birthdays`, {  // ✅ FIXED: Removed duplicate /api
+      const response = await fetch(`${API_BASE}/birthdays`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -230,7 +260,6 @@ const AddBirthdayPage = () => {
         body: submitData
       });
 
-      // Handle response
       let responseData;
       try {
         responseData = await response.json();
@@ -241,19 +270,21 @@ const AddBirthdayPage = () => {
       if (response.ok) {
         toast.success('🎉 Birthday added successfully!');
         
-        // Reset form
         setFormData(INITIAL_FORM_DATA);
         setCurrentStep(1);
         setValidationErrors({});
         
-        // Reset file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        
+        setTimeout(() => {
+          navigate('/');
+        }, 1500);
       } else if (response.status === 401) {
         toast.error('Session expired. Please login again.');
         localStorage.removeItem('token');
-        setTimeout(() => window.location.reload(), 2000);
+        navigate('/login');
       } else if (response.status === 400) {
         toast.error(responseData.message || 'Please check your inputs and try again.');
       } else if (response.status === 409) {
@@ -267,7 +298,7 @@ const AddBirthdayPage = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, validateStep1]);
+  }, [formData, validateStep1, navigate]);
 
   // Age and zodiac display
   const ageDisplay = useMemo(() => {
@@ -277,14 +308,14 @@ const AddBirthdayPage = () => {
     if (!age && !zodiac) return null;
     
     return (
-      <div className="mt-2 flex items-center space-x-4 text-sm">
+      <div className="mt-1 flex items-center space-x-2 text-xs">
         {age !== null && (
-          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+          <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 py-1 rounded-full font-medium">
             {age} years old
           </span>
         )}
         {zodiac && (
-          <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
+          <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full font-medium">
             {zodiac}
           </span>
         )}
@@ -297,8 +328,19 @@ const AddBirthdayPage = () => {
     return new Date().toISOString().split('T')[0];
   }, []);
 
+  // Form completion percentage
+  const completionPercentage = useMemo(() => {
+    let completed = 0;
+    if (formData.name.trim()) completed += 25;
+    if (formData.date) completed += 25;
+    if (formData.relationship) completed += 20;
+    if (formData.notes) completed += 15;
+    if (formData.imagePreview) completed += 15;
+    return Math.min(completed, 100);
+  }, [formData]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-4 py-6">
       <ToastContainer 
         position="top-right" 
         autoClose={3000}
@@ -309,81 +351,158 @@ const AddBirthdayPage = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        theme="light"
       />
       
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-700 to-blue-600 bg-clip-text text-transparent">
-            Add Birthday
-          </h1>
-          <p className="mt-2 text-gray-600">Create a new birthday reminder</p>
+      {/* Header Section with Nav Menu Color Scheme */}
+      <div className={`${getHeaderGradient()} rounded-2xl shadow-xl p-6 mb-6 text-white`}>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Add New Birthday</h1>
+            <p className="opacity-90 text-sm">
+              {completionPercentage === 100 
+                ? 'Ready to save!'
+                : `Form progress: ${completionPercentage}%`
+              }
+            </p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="bg-white/20 hover:bg-white/30 p-3 rounded-xl transition-colors disabled:opacity-50"
+          >
+            <FaSync className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
+      </div>
 
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center mb-4">
-            {[1, 2].map((step) => (
-              <React.Fragment key={step}>
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                  currentStep >= step 
-                    ? 'bg-purple-600 border-purple-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-400'
-                } font-semibold transition-all duration-300`}>
-                  {step}
+      {/* Main Content - Compact Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Steps and Progress */}
+        <div className="lg:col-span-1">
+          {/* Progress Steps */}
+          <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Form Steps</h3>
+            <div className="space-y-4">
+              <div className={`flex items-center p-3 rounded-lg ${currentStep === 1 ? 'bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200' : ''}`}>
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full mr-3 ${
+                  currentStep >= 1 
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-400'
+                } font-semibold text-sm`}>
+                  1
                 </div>
-                {step < 2 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    currentStep > step ? 'bg-purple-600' : 'bg-gray-300'
-                  } transition-colors duration-300`} />
-                )}
-              </React.Fragment>
-            ))}
+                <div>
+                  <div className={`font-medium ${currentStep === 1 ? 'text-blue-700' : 'text-gray-600'}`}>
+                    Basic Details
+                  </div>
+                  <div className="text-xs text-gray-500">Name, Date, Relationship</div>
+                </div>
+              </div>
+              
+              <div className={`flex items-center p-3 rounded-lg ${currentStep === 2 ? 'bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200' : ''}`}>
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full mr-3 ${
+                  currentStep >= 2 
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-400'
+                } font-semibold text-sm`}>
+                  2
+                </div>
+                <div>
+                  <div className={`font-medium ${currentStep === 2 ? 'text-blue-700' : 'text-gray-600'}`}>
+                    Additional Info
+                  </div>
+                  <div className="text-xs text-gray-500">Photo, Notes, Reminders</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between text-sm font-medium text-gray-600">
-            <span className={currentStep === 1 ? 'text-purple-600' : ''}>
-              Basic Details
-            </span>
-            <span className={currentStep === 2 ? 'text-purple-600' : ''}>
-              Additional Info
-            </span>
+
+          {/* Progress Bar */}
+          <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Progress</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Completion</span>
+                <span className="text-sm font-bold text-purple-600">{completionPercentage}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className={`h-2.5 rounded-full transition-all duration-500 ${
+                    completionPercentage === 100 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                      : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                  }`}
+                  style={{ width: `${completionPercentage}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-500">
+                {completionPercentage === 100 
+                  ? 'All required fields completed!'
+                  : 'Fill in all fields to complete the form'
+                }
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Form Container */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-          <form onSubmit={handleSubmit} className="p-6">
-            {currentStep === 1 ? (
-              <Step1Form 
-                formData={formData}
-                validationErrors={validationErrors}
-                relationships={RELATIONSHIPS}
-                maxDate={maxDate}
-                ageDisplay={ageDisplay}
-                onInputChange={handleInputChange}
-                onNextStep={nextStep}
-              />
-            ) : (
-              <Step2Form 
-                formData={formData}
-                fileInputRef={fileInputRef}
-                notificationOptions={NOTIFICATION_OPTIONS}
-                onInputChange={handleInputChange}
-                onImageChange={handleImageChange}
-                onRemoveImage={removeImage}
-                onPrevStep={prevStep}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-              />
-            )}
-          </form>
+        {/* Right Column - Form */}
+        <div className="lg:col-span-2">
+          {/* Compact Form */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+            <form onSubmit={handleSubmit} className="p-5">
+              {/* Step Indicator Header */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                  {currentStep === 1 ? (
+                    <>
+                      <FaUser className="mr-2 text-blue-600" />
+                      Step 1: Basic Information
+                    </>
+                  ) : (
+                    <>
+                      <FaImage className="mr-2 text-purple-600" />
+                      Step 2: Additional Details
+                    </>
+                  )}
+                </h2>
+                <div className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                  Step {currentStep} of 2
+                </div>
+              </div>
+
+              {currentStep === 1 ? (
+                <Step1Form 
+                  formData={formData}
+                  validationErrors={validationErrors}
+                  relationships={RELATIONSHIPS}
+                  maxDate={maxDate}
+                  ageDisplay={ageDisplay}
+                  onInputChange={handleInputChange}
+                  onNextStep={nextStep}
+                />
+              ) : (
+                <Step2Form 
+                  formData={formData}
+                  fileInputRef={fileInputRef}
+                  notificationOptions={NOTIFICATION_OPTIONS}
+                  onInputChange={handleInputChange}
+                  onImageChange={handleImageChange}
+                  onRemoveImage={removeImage}
+                  onPrevStep={prevStep}
+                  onSubmit={handleSubmit}
+                  isSubmitting={isSubmitting}
+                />
+              )}
+            </form>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Step 1 Component
+// Step 1 Component - Compact
 const Step1Form = ({ 
   formData, 
   validationErrors, 
@@ -393,12 +512,7 @@ const Step1Form = ({
   onInputChange, 
   onNextStep 
 }) => (
-  <div className="space-y-6">
-    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-      <FaUser className="mr-2 text-purple-600" />
-      Basic Information
-    </h2>
-    
+  <div className="space-y-5">
     <div>
       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
         Full Name <span className="text-red-500">*</span>
@@ -411,8 +525,8 @@ const Step1Form = ({
           value={formData.name}
           onChange={onInputChange}
           placeholder="Enter full name"
-          className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-            validationErrors.name ? 'border-red-300' : 'border-gray-300'
+          className={`w-full pl-10 pr-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+            validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
           }`}
           aria-invalid={!!validationErrors.name}
           aria-describedby={validationErrors.name ? "name-error" : undefined}
@@ -420,7 +534,7 @@ const Step1Form = ({
         <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
       </div>
       {validationErrors.name && (
-        <p id="name-error" className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+        <p id="name-error" className="mt-1 text-xs text-red-600">{validationErrors.name}</p>
       )}
     </div>
     
@@ -436,8 +550,8 @@ const Step1Form = ({
           value={formData.date}
           onChange={onInputChange}
           max={maxDate}
-          className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-            validationErrors.date ? 'border-red-300' : 'border-gray-300'
+          className={`w-full pl-10 pr-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+            validationErrors.date ? 'border-red-300 bg-red-50' : 'border-gray-300'
           }`}
           aria-invalid={!!validationErrors.date}
           aria-describedby={validationErrors.date ? "date-error" : undefined}
@@ -445,7 +559,7 @@ const Step1Form = ({
         <FaCalendarDay className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
       </div>
       {validationErrors.date && (
-        <p id="date-error" className="mt-1 text-sm text-red-600">{validationErrors.date}</p>
+        <p id="date-error" className="mt-1 text-xs text-red-600">{validationErrors.date}</p>
       )}
       {ageDisplay}
     </div>
@@ -459,7 +573,7 @@ const Step1Form = ({
         name="relationship"
         value={formData.relationship}
         onChange={onInputChange}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors bg-white appearance-none"
+        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
       >
         <option value="">Select relationship</option>
         {relationships.map(rel => (
@@ -471,14 +585,14 @@ const Step1Form = ({
     <button
       type="button"
       onClick={onNextStep}
-      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+      className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow hover:shadow-md"
     >
-      Continue to Details
+      Continue to Step 2
     </button>
   </div>
 );
 
-// Step 2 Component
+// Step 2 Component - Compact
 const Step2Form = ({ 
   formData, 
   fileInputRef, 
@@ -490,12 +604,7 @@ const Step2Form = ({
   onSubmit, 
   isSubmitting 
 }) => (
-  <div className="space-y-6">
-    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-      <FaImage className="mr-2 text-purple-600" />
-      Additional Details
-    </h2>
-    
+  <div className="space-y-5">
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
         Photo (Optional)
@@ -506,12 +615,12 @@ const Step2Form = ({
             <img
               src={formData.imagePreview}
               alt="Preview"
-              className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+              className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
             />
             <button
               type="button"
               onClick={onRemoveImage}
-              className="absolute -top-2 -right-2 h-7 w-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow-md"
+              className="absolute -top-2 -right-2 h-6 w-6 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full flex items-center justify-center text-xs hover:opacity-90 transition-opacity shadow"
               aria-label="Remove photo"
             >
               ×
@@ -519,10 +628,13 @@ const Step2Form = ({
           </div>
         </div>
       ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors">
-          <FaImage className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-sm text-gray-600 mb-2">Upload a photo (optional)</p>
-          <p className="text-xs text-gray-500 mb-4">JPG, PNG up to 5MB</p>
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer bg-gradient-to-br from-gray-50 to-purple-50"
+        >
+          <FaImage className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+          <p className="text-xs text-gray-600">Click to upload a photo</p>
+          <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 5MB</p>
         </div>
       )}
       <input
@@ -532,7 +644,7 @@ const Step2Form = ({
         name="image"
         accept="image/*"
         onChange={onImageChange}
-        className="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition-colors"
+        className="w-full text-xs text-gray-500 mt-2 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gradient-to-r file:from-blue-50 file:to-purple-50 file:text-purple-700 hover:file:bg-gradient-to-r hover:file:from-blue-100 hover:file:to-purple-100 transition-colors"
       />
     </div>
     
@@ -546,14 +658,14 @@ const Step2Form = ({
         name="notes"
         value={formData.notes}
         onChange={onInputChange}
-        rows={4}
+        rows={3}
         placeholder="Add special memories, gift ideas, or anything you'd like to remember..."
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
+        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
       />
     </div>
     
-    <div className="border-t border-gray-200 pt-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-blue-100">
+      <div className="flex items-center justify-between mb-3">
         <label className="flex items-center space-x-3 cursor-pointer">
           <div className="relative">
             <input
@@ -564,7 +676,7 @@ const Step2Form = ({
               className="sr-only"
             />
             <div className={`block w-12 h-6 rounded-full transition-colors ${
-              formData.allowNotifications ? 'bg-purple-600' : 'bg-gray-300'
+              formData.allowNotifications ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gray-300'
             }`} />
             <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
               formData.allowNotifications ? 'transform translate-x-6' : ''
@@ -587,7 +699,7 @@ const Step2Form = ({
             name="notifyBefore"
             value={formData.notifyBefore}
             onChange={onInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors bg-white"
+            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors bg-white"
           >
             {notificationOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -599,11 +711,11 @@ const Step2Form = ({
       )}
     </div>
 
-    <div className="flex space-x-4 pt-6 border-t border-gray-200">
+    <div className="flex space-x-3 pt-4 border-t border-gray-200">
       <button
         type="button"
         onClick={onPrevStep}
-        className="flex-1 flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+        className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
       >
         <FaArrowLeft />
         <span>Back</span>
@@ -612,11 +724,11 @@ const Step2Form = ({
         type="submit"
         disabled={isSubmitting}
         onClick={onSubmit}
-        className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+        className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow hover:shadow-md"
       >
         {isSubmitting ? (
           <>
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
             <span>Saving...</span>
           </>
         ) : (

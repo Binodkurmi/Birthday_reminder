@@ -256,7 +256,7 @@ function Header({
 
   const UserAvatar = React.memo(({ user, size = 'md' }) => (
     <div
-      className={`relative ${size === 'lg' ? 'w-10 h-10' : 'w-8 h-8'} ${size === 'xl' ? 'w-12 h-12' : ''} rounded-xl overflow-hidden border border-white/20 shadow`}
+      className={`relative ${size === 'lg' ? 'w-10 h-10' : 'w-8 h-8'} ${size === 'xl' ? 'w-12 h-12' : ''} rounded-xl overflow-hidden shadow`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500"></div>
       <div className="absolute inset-0 flex items-center justify-center text-white font-semibold select-none">
@@ -273,8 +273,8 @@ function Header({
       <header
         ref={headerRef}
         className={`hidden md:block sticky top-0 z-50 transition-all duration-200 ${scrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-100'
-          : 'bg-white/90 backdrop-blur-sm border-b border-gray-100'
+          ? 'bg-white/95 backdrop-blur-md shadow-lg'
+          : 'bg-white/90 backdrop-blur-sm'
           }`}
       >
         <div className="container mx-auto px-4 py-2">
@@ -340,23 +340,6 @@ function Header({
                           {item.label}
                         </span>
                       </div>
-                      
-                      {/* Animated underline */}
-                      <div className="absolute -bottom-1 left-0 w-full h-0.5 overflow-hidden">
-                        <div 
-                          className={`absolute bottom-0 left-0 h-full rounded-full transition-all duration-500 ease-out ${
-                            isActive 
-                              ? `w-full bg-gradient-to-r ${item.accent} translate-x-0 opacity-100`
-                              : 'w-0 opacity-0 translate-x-[-100%]'
-                          }`}
-                          style={{
-                            transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease'
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Hover effect */}
-                      <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-10 bg-gradient-to-r from-gray-400 to-gray-600 transition-opacity duration-300" />
                     </Link>
                   );
                 })}
@@ -367,7 +350,7 @@ function Header({
             <div className="flex items-center space-x-3">
               {/* Time Display */}
               <div
-                className={`hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-lg border ${scrolled ? 'border-gray-200 bg-gray-50' : 'border-gray-100 bg-white/50'
+                className={`hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-lg ${scrolled ? 'bg-gray-50' : 'bg-white/50'
                   }`}
               >
                 <time className="text-sm font-medium text-gray-900">{memoizedFormatTime}</time>
@@ -402,7 +385,7 @@ function Header({
                     ) : (
                       <button
                         onClick={() => setShowSearch(true)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-50 border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-50 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <FaSearch className="text-gray-500 text-sm" />
                       </button>
@@ -414,10 +397,10 @@ function Header({
                     <Link
                       to="/notifications"
                       onClick={() => setActiveNav('notifications')}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-500 relative ${
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-500 relative ${
                         activeNav === 'notifications'
-                          ? 'border-amber-400 bg-amber-50 shadow-md'
-                          : 'border-gray-200 bg-gray-50 hover:border-amber-200 hover:shadow-sm'
+                          ? 'bg-amber-50 shadow-md'
+                          : 'bg-gray-50 hover:shadow-sm'
                       }`}
                     >
                       <MdNotifications className={`text-sm transition-colors duration-300 ${
@@ -452,8 +435,8 @@ function Header({
                     </button>
 
                     {showDropdown && (
-                      <div className="absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50 animate-fadeIn">
-                        <div className="p-3 bg-gradient-to-r from-gray-50 to-white border-b">
+                      <div className="absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-lg overflow-hidden z-50 animate-fadeIn">
+                        <div className="p-3 bg-gradient-to-r from-gray-50 to-white">
                           <div className="flex items-center space-x-3">
                             <UserAvatar user={user} size="lg" />
                             <div className="min-w-0">
@@ -636,7 +619,7 @@ function Header({
                         onClick={() => setActiveNav('notifications')}
                         className={`relative w-8 h-8 rounded-lg flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-amber-500 ${
                           activeNav === 'notifications'
-                            ? 'bg-amber-50 border border-amber-200'
+                            ? 'bg-amber-50'
                             : 'bg-gray-100'
                         }`}
                       >
@@ -652,7 +635,7 @@ function Header({
                       <div className="relative" ref={dropdownRef}>
                         <button
                           onClick={handleDropdownToggle}
-                          className="w-8 h-8 rounded-lg overflow-hidden border border-white shadow focus:outline-none focus:ring-1 focus:ring-purple-500"
+                          className="w-8 h-8 rounded-lg overflow-hidden shadow focus:outline-none focus:ring-1 focus:ring-purple-500"
                         >
                           <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
                             {user?.username?.charAt(0).toUpperCase() || 'U'}
@@ -683,7 +666,7 @@ function Header({
 
           {/* Mobile Navigation */}
           {isAuthenticated && !showSearch && (
-            <nav className="border-t border-gray-100">
+            <nav>
               <div className="flex justify-around items-center px-1 py-1">
                 {navigationItems.map((item) => {
                   const isActive = activeNav === item.key;
@@ -722,16 +705,6 @@ function Header({
                       }`}>
                         {item.label}
                       </span>
-                      
-                      {/* Active indicator dot */}
-                      {isActive && (
-                        <div 
-                          className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white shadow"
-                          style={{
-                            animation: 'bounceIn 0.3s ease-out'
-                          }}
-                        />
-                      )}
                     </Link>
                   );
                 })}
@@ -751,7 +724,7 @@ function Header({
             className="w-4/5 max-w-sm bg-white h-full shadow-xl animate-slideIn overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 bg-gradient-to-b from-gray-50 to-white border-b sticky top-0">
+            <div className="p-4 bg-gradient-to-b from-gray-50 to-white sticky top-0">
               <div className="flex items-center space-x-3">
                 <UserAvatar user={user} size="xl" />
                 <div className="min-w-0">
@@ -843,7 +816,7 @@ function Header({
       )}
 
       {/* Mobile Bottom Spacer */}
-      {isAuthenticated && !showSearch && <div className="md:hidden h-16"></div>}
+      {isAuthenticated && !showSearch && <div className="md:hidden "></div>}
     </>
   );
 }

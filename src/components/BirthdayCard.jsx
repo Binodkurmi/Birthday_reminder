@@ -14,48 +14,41 @@ const BirthdayCard = ({
   const [isHovered, setIsHovered] = useState(false);
   const [timeUntil, setTimeUntil] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const [imageUrl, setImageUrl] = useState(null);
+  const [retryImage, setRetryImage] = useState(false); // Add retry state
 
-  // FIX: Properly set image URL on component mount
-  useEffect(() => {
-    console.log(`🎯 BirthdayCard loaded for: ${birthday.name}`);
+  // FIXED: Calculate image URL - ONLY use /api/uploads/ pattern
+  const imageUrl = useMemo(() => {
+    console.log(`🎯 Calculating image URL for: ${birthday.name}`);
     console.log(`📸 Image field in DB: "${birthday.image}"`);
-    console.log(`🔗 Image URL from backend: "${birthday.imageUrl}"`);
-
-    if (birthday.image) {
-      let url = null;
-
-      // Priority 1: Use imageUrl from backend if available
-      if (birthday.imageUrl) {
-        url = birthday.imageUrl.startsWith('http')
-          ? birthday.imageUrl
-          : `${imageBaseUrl}${birthday.imageUrl}`;
-        console.log(`✅ Using imageUrl from backend: ${url}`);
-      }
-      // Priority 2: Construct from image field (filename only)
-      else {
-        // Extract just the filename (remove any path)
-        const filename = birthday.image.split('/').pop();
-        url = `${imageBaseUrl}/api/uploads/${filename}`;  
-        console.log(`✅ Constructed URL from filename: ${url}`);
-      }
-
-      setImageUrl(url);
-      setIsImageError(false); // Reset error state
-    } else {
+    
+    // If no image at all, return null
+    if (!birthday.image) {
       console.log(`❌ ${birthday.name}: No image in database`);
-      setImageUrl(null);
+      return null;
     }
-  }, [birthday, imageBaseUrl]);
 
-  // FIX: Calculate image URL using useMemo for better performance
-  const calculatedImageUrl = useMemo(() => {
-    if (!birthday.image) return null;
+    // If image is "null" or "undefined" string, return null
+    if (typeof birthday.image === 'string' && 
+        (birthday.image.toLowerCase() === 'null' || 
+         birthday.image.toLowerCase() === 'undefined')) {
+      console.log(`❌ ${birthday.name}: Image field is "${birthday.image}"`);
+      return null;
+    }
 
     // Extract just the filename (remove any path)
     const filename = birthday.image.split('/').pop();
-    return `${imageBaseUrl}/api/uploads/${filename}`;
-  }, [birthday.image, imageBaseUrl]);
+    
+    // FIXED: ALWAYS use /api/uploads/ pattern - this is what works
+    const finalUrl = `${imageBaseUrl}/api/uploads/${filename}`;
+    
+    console.log(`✅ Final image URL: ${finalUrl}`);
+    return finalUrl;
+  }, [birthday, imageBaseUrl, retryImage]); // Include retryImage to trigger recalculation
+
+  // Reset image error when imageUrl changes
+  useEffect(() => {
+    setIsImageError(false);
+  }, [imageUrl]);
 
   // Calculate days until birthday
   const birthDate = useMemo(() => new Date(birthday.date), [birthday.date]);
@@ -128,34 +121,34 @@ const BirthdayCard = ({
     }
   }, [diffDays]);
 
-  // FIX: Improved image error handler
+  // FIXED: Improved image error handler
   const handleImageError = (e) => {
     console.error(`❌ Image failed to load for ${birthday.name}:`, {
       attemptedUrl: e.target.src,
       imageField: birthday.image,
       timestamp: new Date().toISOString()
     });
+    
     setIsImageError(true);
 
-    // Test if the URL is accessible
-    if (e.target.src) {
-      console.log(`🔍 Testing URL accessibility: ${e.target.src}`);
-      // Try to fetch the image to see what happens
-      fetch(e.target.src, { method: 'HEAD' })
-        .then(response => {
-          console.log(`🔍 HTTP Status: ${response.status} ${response.statusText}`);
-          if (!response.ok) {
-            console.log(`🔍 Server response:`, response);
-          }
-        })
-        .catch(fetchError => {
-          console.error(`🔍 Fetch error:`, fetchError);
-        });
+    // If there's an error, retry with the correct URL pattern
+    if (birthday.image) {
+      const filename = birthday.image.split('/').pop();
+      const correctUrl = `${imageBaseUrl}/api/uploads/${filename}`;
+      
+      console.log(`🔄 Retrying with correct URL: ${correctUrl}`);
+      
+      // If current URL is wrong, update it
+      if (e.target.src !== correctUrl) {
+        console.log(`🔁 Updating image source from ${e.target.src} to ${correctUrl}`);
+        e.target.src = correctUrl;
+        setRetryImage(prev => !prev); // Trigger re-render
+      }
     }
   };
 
   const handleImageLoad = () => {
-    console.log(`✅ Image loaded successfully for ${birthday.name}: ${imageUrl || calculatedImageUrl}`);
+    console.log(`✅ Image loaded successfully for ${birthday.name}: ${imageUrl}`);
     setIsImageError(false);
   };
 
@@ -244,19 +237,19 @@ const BirthdayCard = ({
       {/* Gradient accent */}
       <div className={`absolute top-0 left-0 w-full h-1 rounded-t-2xl ${getStatusColor()}`}></div>
 
-      {/* Header with image and basic info - FIXED */}
+      {/* Header with image and basic info */}
       <div className="flex items-start mb-4">
         <div className="relative">
           <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden">
-            {/* FIX: Use either imageUrl from state or calculatedImageUrl */}
-            {(imageUrl || calculatedImageUrl) && !isImageError ? (
+            {imageUrl && !isImageError ? (
               <img
-                src={imageUrl || calculatedImageUrl}
+                key={`${birthday._id}-${retryImage}`} // Force re-render on retry
+                src={imageUrl}
                 alt={birthday.name}
                 className="w-full h-full object-cover"
                 onError={handleImageError}
                 onLoad={handleImageLoad}
-                crossOrigin="anonymous" // Add this for CORS
+                crossOrigin="anonymous"
               />
             ) : (
               <div className="flex flex-col items-center justify-center">
@@ -264,21 +257,16 @@ const BirthdayCard = ({
                 <span className="text-[8px] text-gray-500 mt-1">
                   {isImageError ? 'Load failed' : 'No photo'}
                 </span>
-                {/* Debug button - shows only in development */}
-                {process.env.NODE_ENV === 'development' && isImageError && (
+                {/* Retry button */}
+                {isImageError && (
                   <button
                     onClick={() => {
-                      console.log('🔄 Retrying image...');
-                      console.log('Birthday object:', birthday);
-                      console.log('Image field:', birthday.image);
-                      console.log('Constructed URL:', calculatedImageUrl);
-                      if (calculatedImageUrl) {
-                        window.open(calculatedImageUrl, '_blank');
-                      }
+                      console.log(`🔄 Manual retry for ${birthday.name}`);
+                      setRetryImage(prev => !prev);
                     }}
                     className="text-[6px] mt-1 text-blue-500 hover:underline"
                   >
-                    Debug
+                    Retry
                   </button>
                 )}
               </div>
