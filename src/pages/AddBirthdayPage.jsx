@@ -20,13 +20,11 @@ const RELATIONSHIPS = [
   'Acquaintance', 'Other'
 ];
 
-const NOTIFICATION_OPTIONS = [
-  { value: 0, label: 'On the day' },
-  { value: 1, label: '1 day before' },
-  { value: 3, label: '3 days before' },
-  { value: 7, label: '1 week before' },
-  { value: 14, label: '2 weeks before' },
-  { value: 30, label: '1 month before' }
+// Updated to match backend expectations
+const NOTIFICATION_PREFERENCES = [
+  { id: 'onTheDay', label: 'On the day', value: 'onTheDay' },
+  { id: 'oneDayBefore', label: '1 day before', value: 'oneDayBefore' },
+  { id: 'oneWeekBefore', label: '1 week before', value: 'oneWeekBefore' }
 ];
 
 const ZODIAC_SIGNS = [
@@ -45,7 +43,7 @@ const ZODIAC_SIGNS = [
   { sign: "मकर", start: [12, 22], end: [12, 31] }
 ];
 
-// Initial form state
+// Initial form state - updated to match backend
 const INITIAL_FORM_DATA = {
   name: '',
   date: '',
@@ -53,8 +51,11 @@ const INITIAL_FORM_DATA = {
   notes: '',
   image: null,
   imagePreview: null,
-  notifyBefore: 7,
-  allowNotifications: true
+  notificationPreferences: {
+    oneDayBefore: true,
+    oneWeekBefore: true,
+    onTheDay: true
+  }
 };
 
 const AddBirthdayPage = () => {
@@ -128,10 +129,21 @@ const AddBirthdayPage = () => {
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    if (name.includes('notificationPreferences.')) {
+      const prefName = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        notificationPreferences: {
+          ...prev.notificationPreferences,
+          [prefName]: checked
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
     
     if (validationErrors[name]) {
       setValidationErrors(prev => ({
@@ -184,6 +196,19 @@ const AddBirthdayPage = () => {
       fileInputRef.current.value = '';
     }
   }, []);
+
+  // Toggle all notifications
+  const toggleAllNotifications = useCallback(() => {
+    const allEnabled = Object.values(formData.notificationPreferences).every(Boolean);
+    setFormData(prev => ({
+      ...prev,
+      notificationPreferences: {
+        oneDayBefore: !allEnabled,
+        oneWeekBefore: !allEnabled,
+        onTheDay: !allEnabled
+      }
+    }));
+  }, [formData.notificationPreferences]);
 
   // Form validation
   const validateStep1 = useCallback(() => {
@@ -244,8 +269,9 @@ const AddBirthdayPage = () => {
       submitData.append('date', formData.date);
       submitData.append('relationship', formData.relationship);
       submitData.append('notes', formData.notes);
-      submitData.append('notifyBefore', formData.notifyBefore.toString());
-      submitData.append('allowNotifications', formData.allowNotifications.toString());
+      
+      // Send notification preferences as JSON string
+      submitData.append('notificationPreferences', JSON.stringify(formData.notificationPreferences));
       
       if (formData.image) {
         submitData.append('image', formData.image);
@@ -485,10 +511,11 @@ const AddBirthdayPage = () => {
                 <Step2Form 
                   formData={formData}
                   fileInputRef={fileInputRef}
-                  notificationOptions={NOTIFICATION_OPTIONS}
+                  notificationPreferences={NOTIFICATION_PREFERENCES}
                   onInputChange={handleInputChange}
                   onImageChange={handleImageChange}
                   onRemoveImage={removeImage}
+                  onToggleAllNotifications={toggleAllNotifications}
                   onPrevStep={prevStep}
                   onSubmit={handleSubmit}
                   isSubmitting={isSubmitting}
@@ -592,154 +619,159 @@ const Step1Form = ({
   </div>
 );
 
-// Step 2 Component - Compact
+// Step 2 Component - Compact with updated notification preferences
 const Step2Form = ({ 
   formData, 
   fileInputRef, 
-  notificationOptions, 
+  notificationPreferences, 
   onInputChange, 
   onImageChange, 
   onRemoveImage, 
+  onToggleAllNotifications,
   onPrevStep, 
   onSubmit, 
   isSubmitting 
-}) => (
-  <div className="space-y-5">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Photo (Optional)
-      </label>
-      {formData.imagePreview ? (
-        <div className="mb-4">
-          <div className="relative inline-block">
-            <img
-              src={formData.imagePreview}
-              alt="Preview"
-              className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
-            />
-            <button
-              type="button"
-              onClick={onRemoveImage}
-              className="absolute -top-2 -right-2 h-6 w-6 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full flex items-center justify-center text-xs hover:opacity-90 transition-opacity shadow"
-              aria-label="Remove photo"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer bg-gradient-to-br from-gray-50 to-purple-50"
-        >
-          <FaImage className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-          <p className="text-xs text-gray-600">Click to upload a photo</p>
-          <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 5MB</p>
-        </div>
-      )}
-      <input
-        ref={fileInputRef}
-        type="file"
-        id="image"
-        name="image"
-        accept="image/*"
-        onChange={onImageChange}
-        className="w-full text-xs text-gray-500 mt-2 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gradient-to-r file:from-blue-50 file:to-purple-50 file:text-purple-700 hover:file:bg-gradient-to-r hover:file:from-blue-100 hover:file:to-purple-100 transition-colors"
-      />
-    </div>
-    
-    <div>
-      <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-        <FaNotesMedical className="mr-2 text-gray-400" />
-        Notes
-      </label>
-      <textarea
-        id="notes"
-        name="notes"
-        value={formData.notes}
-        onChange={onInputChange}
-        rows={3}
-        placeholder="Add special memories, gift ideas, or anything you'd like to remember..."
-        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
-      />
-    </div>
-    
-    <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-blue-100">
-      <div className="flex items-center justify-between mb-3">
-        <label className="flex items-center space-x-3 cursor-pointer">
-          <div className="relative">
-            <input
-              type="checkbox"
-              name="allowNotifications"
-              checked={formData.allowNotifications}
-              onChange={onInputChange}
-              className="sr-only"
-            />
-            <div className={`block w-12 h-6 rounded-full transition-colors ${
-              formData.allowNotifications ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gray-300'
-            }`} />
-            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-              formData.allowNotifications ? 'transform translate-x-6' : ''
-            }`} />
-          </div>
-          <span className="text-sm font-medium text-gray-700 flex items-center">
-            <FaBell className="mr-2" />
-            Enable Reminders
-          </span>
+}) => {
+  const allNotificationsEnabled = Object.values(formData.notificationPreferences).every(Boolean);
+  
+  return (
+    <div className="space-y-5">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Photo (Optional)
         </label>
+        {formData.imagePreview ? (
+          <div className="mb-4">
+            <div className="relative inline-block">
+              <img
+                src={formData.imagePreview}
+                alt="Preview"
+                className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+              />
+              <button
+                type="button"
+                onClick={onRemoveImage}
+                className="absolute -top-2 -right-2 h-6 w-6 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full flex items-center justify-center text-xs hover:opacity-90 transition-opacity shadow"
+                aria-label="Remove photo"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer bg-gradient-to-br from-gray-50 to-purple-50"
+          >
+            <FaImage className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+            <p className="text-xs text-gray-600">Click to upload a photo</p>
+            <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 5MB</p>
+          </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          id="image"
+          name="image"
+          accept="image/*"
+          onChange={onImageChange}
+          className="w-full text-xs text-gray-500 mt-2 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gradient-to-r file:from-blue-50 file:to-purple-50 file:text-purple-700 hover:file:bg-gradient-to-r hover:file:from-blue-100 hover:file:to-purple-100 transition-colors"
+        />
       </div>
       
-      {formData.allowNotifications && (
-        <div className="pl-4 border-l-2 border-purple-200 ml-1">
-          <label htmlFor="notifyBefore" className="block text-sm font-medium text-gray-700 mb-2">
-            Remind me before
-          </label>
-          <select
-            id="notifyBefore"
-            name="notifyBefore"
-            value={formData.notifyBefore}
-            onChange={onInputChange}
-            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors bg-white"
+      <div>
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+          <FaNotesMedical className="mr-2 text-gray-400" />
+          Notes
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          value={formData.notes}
+          onChange={onInputChange}
+          rows={3}
+          placeholder="Add special memories, gift ideas, or anything you'd like to remember..."
+          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
+        />
+      </div>
+      
+      <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-blue-100">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <FaBell className="text-purple-600" />
+            <span className="text-sm font-medium text-gray-700">Notification Preferences</span>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleAllNotifications}
+            className="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition-colors"
           >
-            {notificationOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            {allNotificationsEnabled ? 'Disable All' : 'Enable All'}
+          </button>
         </div>
-      )}
-    </div>
+        
+        <div className="space-y-3">
+          {notificationPreferences.map(pref => (
+            <label key={pref.id} className="flex items-center justify-between p-2 hover:bg-white rounded-lg transition-colors">
+              <span className="text-sm text-gray-700">{pref.label}</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  name={`notificationPreferences.${pref.value}`}
+                  checked={formData.notificationPreferences[pref.value]}
+                  onChange={onInputChange}
+                  className="sr-only"
+                />
+                <div className={`block w-10 h-5 rounded-full transition-colors ${
+                  formData.notificationPreferences[pref.value] 
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
+                    : 'bg-gray-300'
+                }`} />
+                <div className={`absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${
+                  formData.notificationPreferences[pref.value] ? 'transform translate-x-5' : ''
+                }`} />
+              </div>
+            </label>
+          ))}
+        </div>
+        
+        <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-blue-200">
+          {allNotificationsEnabled 
+            ? '✅ You will receive all birthday reminders' 
+            : '📅 Select when you want to be reminded'}
+        </p>
+      </div>
 
-    <div className="flex space-x-3 pt-4 border-t border-gray-200">
-      <button
-        type="button"
-        onClick={onPrevStep}
-        className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
-      >
-        <FaArrowLeft />
-        <span>Back</span>
-      </button>
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        onClick={onSubmit}
-        className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow hover:shadow-md"
-      >
-        {isSubmitting ? (
-          <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-            <span>Saving...</span>
-          </>
-        ) : (
-          <>
-            <FaSave />
-            <span>Save Birthday</span>
-          </>
-        )}
-      </button>
+      <div className="flex space-x-3 pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          onClick={onPrevStep}
+          className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+        >
+          <FaArrowLeft />
+          <span>Back</span>
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          onClick={onSubmit}
+          className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow hover:shadow-md"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <FaSave />
+              <span>Save Birthday</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default AddBirthdayPage;
